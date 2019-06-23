@@ -43,10 +43,10 @@ int sign_secp256k1(const uint8_t *message,
                    unsigned int signature_capacity,
                    unsigned int *signature_length,
                    cx_ecfp_private_key_t *privateKey) {
-    uint8_t message_digest[CX_SHA256_SIZE];
+    uint8_t message_digest[HASH_KECCAK_BYTES];
 
-    cx_keccak_init(&sha3, 256);
-    cx_hash((cx_hash_t *)&sha3, CX_LAST, message, message_length, message_digest,32);
+    cx_keccak_init(&sha3, HASH_KECCAK_BYTES * 8);
+    cx_hash((cx_hash_t *)&sha3, CX_LAST, message, message_length, message_digest,HASH_KECCAK_BYTES);
 
     cx_ecfp_public_key_t publicKey;
     cx_ecdsa_init_public_key(CX_CURVE_256K1, NULL, 0, &publicKey);
@@ -109,12 +109,13 @@ void get_pk_compressed(uint8_t *pkc) {
 }
 
 void get_bech32_addr(char *bech32_addr) {
-    uint8_t tmp[PK_COMPRESSED_LEN];
-    get_pk_compressed(tmp);
+    uint8_t key_digest[HASH_KECCAK_BYTES];
+    cx_ecfp_public_key_t publicKey;
 
-    uint8_t hashed_pk[CX_RIPEMD160_SIZE];
-    cx_hash_sha256(tmp, PK_COMPRESSED_LEN, tmp, CX_SHA256_SIZE);
-    ripemd160_32(hashed_pk, tmp);
+    getPubKey(&publicKey);
+    cx_keccak_init(&sha3, HASH_KECCAK_BYTES * 8);
+    cx_hash((cx_hash_t *)&sha3, CX_LAST, &(publicKey.W[1]), publicKey.W_len-1, key_digest,HASH_KECCAK_BYTES);
 
-    bech32EncodeFromBytes(bech32_addr, bech32_hrp, hashed_pk, CX_RIPEMD160_SIZE);
+    // Encode the last 20 bytes([12:32] bytes in the 32 bytes hash value)as address
+    bech32EncodeFromBytes(bech32_addr, bech32_hrp, &(key_digest[12]), 20);
 }

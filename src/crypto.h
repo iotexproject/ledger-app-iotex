@@ -32,6 +32,8 @@
 #define BIP32_ACCOUNT       (bip32_path[2] & 0x7FFFFFF)
 #define BIP32_INDEX         (bip32_path[4] & 0x7FFFFFF)
 
+#define HASH_KECCAK_BYTES    32
+
 typedef enum {
     SECP256K1 = 0,
     ED25519 = 1
