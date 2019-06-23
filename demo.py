@@ -14,8 +14,13 @@ print "os version:" + str(osversion).encode('hex')
 
 ## Get public key 44'/304'/{account}0'/0/{index}0
 print "Get public key ...\n"
-address = dongle.exchange(bytes("5501000011052c00008030010080000000800000000000000000".decode('hex')))
-print "public key: \n" + str(address).encode('hex')
+publickey = dongle.exchange(bytes("5501000015052c00008030010080000000800000000000000000".decode('hex')))
+print "public key: \n" + str(publickey).encode('hex')
+
+## Get address 44'/304'/{account}0'/0/{index}0
+print "Get Address ...\n"
+address = dongle.exchange(bytes("550400001802696f052c00008030010080000000800000000000000000".decode('hex')))
+print "public key(32 bytes) + Address: \n" + str(address).encode('hex')
 
 ## sign key 44'/304'/{account}0'/0/{index}0
 print "sign test init...\n"
