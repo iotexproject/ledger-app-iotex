@@ -19,7 +19,7 @@
 #include "os.h"
 #include "cx.h"
 
-#define MAX_BECH32_HRP_LEN      83
+#define MAX_BECH32_HRP_LEN      10
 #define PK_COMPRESSED_LEN       33
 
 #define BIP32_LEN_DEFAULT   0
