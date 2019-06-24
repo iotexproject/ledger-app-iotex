@@ -65,7 +65,7 @@ int sign_secp256k1(const uint8_t *message,
 
     os_memset(&privateKey, 0, sizeof(privateKey));
 #ifdef TESTING_ENABLED
-    return cx_ecdsa_verify(
+    int ret = cx_ecdsa_verify(
             &publicKey,
             CX_LAST,
             CX_SHA256,
@@ -73,9 +73,30 @@ int sign_secp256k1(const uint8_t *message,
             CX_SHA256_SIZE,
             signature,
             *signature_length);
-#else
-    return 1;
+    if ( ret != 1) return ret;
 #endif
+    //Re encoding ECDSA signature from ASN.1 TLV:  30(1) L(1) 02(1) Lr(1) r(Lr) 02(1) Ls(1) s(Ls)
+    //to:  r(32)s(32)v(1)
+    uint8_t rLength, sLength, rOffset, sOffset;
+    uint8_t v = 0;
+    rLength = signature[3];
+    sLength = signature[4 + rLength + 1];
+    rOffset = (rLength == 33 ? 1 : 0);
+    sOffset = (sLength == 33 ? 1 : 0);
+
+    if (info & CX_ECCINFO_PARITY_ODD) {
+      v++;
+    }
+    if (info & CX_ECCINFO_xGTn) {
+      v += 2;
+    }
+
+    os_memmove(signature,signature + 4 + rOffset, 32);
+    os_memmove(signature + 32, signature + 4 + rLength + 2 + sOffset, 32);
+    signature[64] = v;
+    *signature_length = 65;
+
+    return 1;
 }
 
 void getPubKey(cx_ecfp_public_key_t *publicKey) {
