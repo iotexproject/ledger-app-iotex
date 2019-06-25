@@ -21,6 +21,10 @@
 #include "pb_parser.h"
 #include "tx_parser.h"
 
+#define min(a,b) \
+   ({ __typeof__ (a) _a = (a); \
+      __typeof__ (b) _b = (b); \
+      _a < _b ? _a : _b; })
 
 uint64_t 
 decode_varint(const uint8_t *buf, uint8_t *skip_bytes, uint8_t max_len) {
@@ -67,19 +71,19 @@ decode_tx_pb(const uint8_t *pb_data, uint8_t *skip_bytes_out,uint32_t len, uint3
                 i++;
                 total++;
 
-                uint32_t amountstrlen;
-                amountstrlen = decode_varint(&pb_data[i], &skip_bytes, len - i);
+                int amount_str_len;
+                amount_str_len = decode_varint(&pb_data[i], &skip_bytes, len - i);
                 i += skip_bytes;
 
                 if (curid == queryid) {
                     int cpylen;
-                    cpylen = (amountstrlen<(uint32_t)(tx_ctx.query.out_val_len-1))? amountstrlen:(tx_ctx.query.out_val_len-1);
+                    cpylen = min(amount_str_len, tx_ctx.query.out_val_len-1);
                     snprintf(tx_ctx.query.out_key, tx_ctx.query.out_key_len,
                          "Tx Amount");
                     strncpy(tx_ctx.query.out_val,(const char *)&pb_data[i],cpylen);
                     tx_ctx.query.out_val[cpylen] = 0;
                 }
-                i += amountstrlen;
+                i += amount_str_len;
                 curid++;
                 break;
             case ACT_TX_RECIPIENT:
@@ -88,19 +92,19 @@ decode_tx_pb(const uint8_t *pb_data, uint8_t *skip_bytes_out,uint32_t len, uint3
                 i++;
                 total++;
 
-                uint32_t recipentlen;
-                recipentlen = decode_varint(&pb_data[i], &skip_bytes, len - i);
+                int recipent_add_len;
+                recipent_add_len = decode_varint(&pb_data[i], &skip_bytes, len - i);
                 i += skip_bytes;
 
                 if (curid == queryid) {
                     int cpylen;
-                    cpylen = (recipentlen<(uint32_t)(tx_ctx.query.out_val_len-1))? recipentlen:(tx_ctx.query.out_val_len-1);
+                    cpylen = min(recipent_add_len, tx_ctx.query.out_val_len-1);
                     snprintf(tx_ctx.query.out_key, tx_ctx.query.out_key_len,
                          "Recipient");
                     strncpy(tx_ctx.query.out_val,(const char *)&pb_data[i],cpylen);
                     tx_ctx.query.out_val[cpylen] = 0;
                 }
-                i += recipentlen;
+                i += recipent_add_len;
                 curid++;
                 break;
             case ACT_TX_PAYLOAD:
@@ -109,19 +113,19 @@ decode_tx_pb(const uint8_t *pb_data, uint8_t *skip_bytes_out,uint32_t len, uint3
                 i++;
                 total++;
 
-                uint32_t payloadlen;
-                payloadlen = decode_varint(&pb_data[i], &skip_bytes, len - i);
+                int payload_len;
+                payload_len = decode_varint(&pb_data[i], &skip_bytes, len - i);
                 i += skip_bytes;
 
                 if (curid == queryid) {
                     int cpylen;
-                    cpylen = (payloadlen<(uint32_t)(tx_ctx.query.out_val_len-1))? payloadlen:(tx_ctx.query.out_val_len-1);
+                    cpylen = min(payload_len, tx_ctx.query.out_val_len-1);
                     snprintf(tx_ctx.query.out_key, tx_ctx.query.out_key_len,
                          "Payload");
                     strncpy(tx_ctx.query.out_val,(const char *)&pb_data[i],cpylen);
                     tx_ctx.query.out_val[cpylen] = 0;
                 }
-                i += payloadlen;
+                i += payload_len;
                 curid++;
                 break;
 
@@ -145,6 +149,7 @@ decode_exe_pb(const uint8_t *pb_data, uint8_t *skip_bytes_out,uint32_t len, uint
     int curid;
 
     total = 0;
+    curid = 0;
     i = 0;
     while (i < len)
     {
@@ -158,17 +163,20 @@ decode_exe_pb(const uint8_t *pb_data, uint8_t *skip_bytes_out,uint32_t len, uint
                 i++;
                 total++;
 
-                uint32_t amountlen;
-                amountlen = decode_varint(&pb_data[i], &skip_bytes, len - i);
+                int amount_str_len;
+                amount_str_len = decode_varint(&pb_data[i], &skip_bytes, len - i);
                 i += skip_bytes;
 
-                char amountstr[10];
-                
-                for (uint32_t m=0; m < amountlen; m++){
-                    amountstr[m] = pb_data[i++];
+                if (curid == queryid) {
+                    int cpylen;
+                    cpylen = min(amount_str_len, tx_ctx.query.out_val_len-1);
+                    snprintf(tx_ctx.query.out_key, tx_ctx.query.out_key_len,
+                        "Exe Amount");
+                    strncpy(tx_ctx.query.out_val,(const char *)&pb_data[i],cpylen);
+                    tx_ctx.query.out_val[cpylen] = 0;
                 }
-                amountstr[amountlen] = 0;
-                
+                i += amount_str_len;
+                curid++;
                 break;
             case ACT_EXE_CONTRACT:
                 if (wire_type!=PB_WT_LD) return -1; // type doesn't match
@@ -176,16 +184,20 @@ decode_exe_pb(const uint8_t *pb_data, uint8_t *skip_bytes_out,uint32_t len, uint
                 i++;
                 total++;
 
-                uint32_t contractlen;
-                contractlen = decode_varint(&pb_data[i], &skip_bytes, len - i);
+                int contract_add_len;
+                contract_add_len = decode_varint(&pb_data[i], &skip_bytes, len - i);
                 i += skip_bytes;
-
-                char contractstr[50];
-
-                for (uint32_t m=0; m < contractlen; m++){
-                    contractstr[m] = pb_data[i++];
+                
+                if (curid == queryid) {
+                    int cpylen;
+                    cpylen = min(contract_add_len, tx_ctx.query.out_val_len-1);
+                    snprintf(tx_ctx.query.out_key, tx_ctx.query.out_key_len,
+                         "Recipient");
+                    strncpy(tx_ctx.query.out_val,(const char *)&pb_data[i],cpylen);
+                    tx_ctx.query.out_val[cpylen] = 0;
                 }
-                contractstr[contractlen] = 0;
+                i += contract_add_len;
+                curid++;
                 break;
             case ACT_EXE_DATA:
                 if (wire_type!=PB_WT_LD) return -1; // type doesn't match
@@ -271,15 +283,15 @@ decode_pb(const uint8_t *pb_data, uint32_t len, uint32_t *totalfields_out, int q
                 i++;
                 totalfields++;
 
-                uint64_t gaslimit;
-                gaslimit = decode_varint(&pb_data[i], &skip_bytes, len - i);
+                uint64_t gas_limit;
+                gas_limit = decode_varint(&pb_data[i], &skip_bytes, len - i);
                 i += skip_bytes;
 
                 if (curid == queryid) {
                     snprintf(tx_ctx.query.out_key, tx_ctx.query.out_key_len,
                          "Gas Limit");
                     snprintf(tx_ctx.query.out_val, tx_ctx.query.out_val_len,
-                         "%d", gaslimit);
+                         "%d", gas_limit);
                 }
                 curid++;
                 break;
@@ -289,18 +301,18 @@ decode_pb(const uint8_t *pb_data, uint32_t len, uint32_t *totalfields_out, int q
                 i++;
                 totalfields++;
                 
-                int gasstrlen = decode_varint(&pb_data[i], &skip_bytes, len - i);;
+                int gas_str_len = decode_varint(&pb_data[i], &skip_bytes, len - i);;
                 i += skip_bytes;
 
                 if (curid == queryid) {
                     int cpylen;
-                    cpylen = (gasstrlen<(tx_ctx.query.out_val_len-1))? gasstrlen:(tx_ctx.query.out_val_len-1);
+                    cpylen = min(gas_str_len, tx_ctx.query.out_val_len-1);
                     snprintf(tx_ctx.query.out_key, tx_ctx.query.out_key_len,
                          "Gas Price");
                     strncpy(tx_ctx.query.out_val, (const char *)&pb_data[i], cpylen);
                     tx_ctx.query.out_val[cpylen] = 0;
                 }
-                i += gasstrlen;
+                i += gas_str_len;
                 curid++;
 
                 break; 
@@ -310,15 +322,14 @@ decode_pb(const uint8_t *pb_data, uint32_t len, uint32_t *totalfields_out, int q
                 tx_ctx.actiontype = 1; //action is Transfer TBD fix 
                 i++;
 
-                uint64_t txlen = decode_varint(&pb_data[i], &skip_bytes, len - i);
+                uint64_t tsf_len = decode_varint(&pb_data[i], &skip_bytes, len - i);
                 i += skip_bytes;
 
                 if ( -1 == decode_tx_pb(&pb_data[i],&skip_bytes,100, &subtotalfields, queryid - curid )) return -1;
 
                 totalfields += subtotalfields;
                 curid += subtotalfields;
-
-                i+= txlen;
+                i+= tsf_len;
                 break;
             case ACT_EXECUTION:
                 if (wire_type!=PB_WT_LD) return -1; // type doesn't match
@@ -326,15 +337,14 @@ decode_pb(const uint8_t *pb_data, uint32_t len, uint32_t *totalfields_out, int q
                 tx_ctx.actiontype = 2; //action is Execution TBD fix 
                 i++;
 
-                uint64_t exelen = decode_varint(&pb_data[i], &skip_bytes, len - i);
-
-            
+                uint64_t exe_len = decode_varint(&pb_data[i], &skip_bytes, len - i);
                 i += skip_bytes;
 
                 if ( -1 == decode_exe_pb(&pb_data[i],&skip_bytes,100,&subtotalfields, queryid - curid )) return -1;
+                
                 totalfields += subtotalfields;
                 curid += subtotalfields;
-                i+= exelen;
+                i+= exe_len;
                 break;
             default:
             
