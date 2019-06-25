@@ -73,10 +73,10 @@ decode_tx_pb(const uint8_t *pb_data, uint8_t *skip_bytes_out,uint32_t len, uint3
 
                 if (curid == queryid) {
                     int cpylen;
-                    cpylen = (amountstrlen<(tx_ctx.query.out_val_len-1))? amountstrlen:(tx_ctx.query.out_val_len-1);
+                    cpylen = (amountstrlen<(uint32_t)(tx_ctx.query.out_val_len-1))? amountstrlen:(tx_ctx.query.out_val_len-1);
                     snprintf(tx_ctx.query.out_key, tx_ctx.query.out_key_len,
                          "Tx Amount");
-                    strncpy(tx_ctx.query.out_val,&pb_data[i],cpylen);
+                    strncpy(tx_ctx.query.out_val,(const char *)&pb_data[i],cpylen);
                     tx_ctx.query.out_val[cpylen] = 0;
                 }
                 i += amountstrlen;
@@ -94,10 +94,10 @@ decode_tx_pb(const uint8_t *pb_data, uint8_t *skip_bytes_out,uint32_t len, uint3
 
                 if (curid == queryid) {
                     int cpylen;
-                    cpylen = (recipentlen<(tx_ctx.query.out_val_len-1))? recipentlen:(tx_ctx.query.out_val_len-1);
+                    cpylen = (recipentlen<(uint32_t)(tx_ctx.query.out_val_len-1))? recipentlen:(tx_ctx.query.out_val_len-1);
                     snprintf(tx_ctx.query.out_key, tx_ctx.query.out_key_len,
                          "Recipient");
-                    strncpy(tx_ctx.query.out_val,&pb_data[i],cpylen);
+                    strncpy(tx_ctx.query.out_val,(const char *)&pb_data[i],cpylen);
                     tx_ctx.query.out_val[cpylen] = 0;
                 }
                 i += recipentlen;
@@ -115,10 +115,10 @@ decode_tx_pb(const uint8_t *pb_data, uint8_t *skip_bytes_out,uint32_t len, uint3
 
                 if (curid == queryid) {
                     int cpylen;
-                    cpylen = (payloadlen<(tx_ctx.query.out_val_len-1))? payloadlen:(tx_ctx.query.out_val_len-1);
+                    cpylen = (payloadlen<(uint32_t)(tx_ctx.query.out_val_len-1))? payloadlen:(tx_ctx.query.out_val_len-1);
                     snprintf(tx_ctx.query.out_key, tx_ctx.query.out_key_len,
                          "Payload");
-                    strncpy(tx_ctx.query.out_val,&pb_data[i],cpylen);
+                    strncpy(tx_ctx.query.out_val,(const char *)&pb_data[i],cpylen);
                     tx_ctx.query.out_val[cpylen] = 0;
                 }
                 i += payloadlen;
@@ -164,7 +164,7 @@ decode_exe_pb(const uint8_t *pb_data, uint8_t *skip_bytes_out,uint32_t len, uint
 
                 char amountstr[10];
                 
-                for (int m=0;m<amountlen;m++){
+                for (uint32_t m=0; m < amountlen; m++){
                     amountstr[m] = pb_data[i++];
                 }
                 amountstr[amountlen] = 0;
@@ -182,7 +182,7 @@ decode_exe_pb(const uint8_t *pb_data, uint8_t *skip_bytes_out,uint32_t len, uint
 
                 char contractstr[50];
 
-                for (int m=0;m<contractlen;m++){
+                for (uint32_t m=0; m < contractlen; m++){
                     contractstr[m] = pb_data[i++];
                 }
                 contractstr[contractlen] = 0;
@@ -261,7 +261,7 @@ decode_pb(const uint8_t *pb_data, uint32_t len, uint32_t *totalfields_out, int q
                     snprintf(tx_ctx.query.out_key, tx_ctx.query.out_key_len,
                          "Nonce");
                     snprintf(tx_ctx.query.out_val, tx_ctx.query.out_val_len,
-                         "%d",nonce);
+                         "%d", nonce);
                 }
                 curid++;
                 break;
@@ -279,7 +279,7 @@ decode_pb(const uint8_t *pb_data, uint32_t len, uint32_t *totalfields_out, int q
                     snprintf(tx_ctx.query.out_key, tx_ctx.query.out_key_len,
                          "Gas Limit");
                     snprintf(tx_ctx.query.out_val, tx_ctx.query.out_val_len,
-                         "%d",gaslimit);
+                         "%d", gaslimit);
                 }
                 curid++;
                 break;
@@ -297,7 +297,7 @@ decode_pb(const uint8_t *pb_data, uint32_t len, uint32_t *totalfields_out, int q
                     cpylen = (gasstrlen<(tx_ctx.query.out_val_len-1))? gasstrlen:(tx_ctx.query.out_val_len-1);
                     snprintf(tx_ctx.query.out_key, tx_ctx.query.out_key_len,
                          "Gas Price");
-                    strncpy(tx_ctx.query.out_val,&pb_data[i],cpylen);
+                    strncpy(tx_ctx.query.out_val, (const char *)&pb_data[i], cpylen);
                     tx_ctx.query.out_val[cpylen] = 0;
                 }
                 i += gasstrlen;

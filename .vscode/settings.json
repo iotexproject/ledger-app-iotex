@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "tx_parser.h": "c",
+        "jsmn.h": "c",
+        "transaction.h": "c",
+        "pb_parser.h": "c"
+    }
+}

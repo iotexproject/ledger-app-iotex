@@ -1,5 +1,6 @@
 /*******************************************************************************
 *   (c) ZondaX GmbH
+*   (c) 2019 IoTeX
 *
 *  Licensed under the Apache License, Version 2.0 (the "License");
 *  you may not use this file except in compliance with the License.
@@ -14,10 +15,11 @@
 *  limitations under the License.
 ********************************************************************************/
 
-#include <jsmn.h>
 #include <stdio.h>
+#include <string.h>
 #include "tx_parser.h"
 #include "tx_display.h"
+#include "transaction.h"
 
 #if defined(TARGET_NANOS) || defined(TARGET_NANOX)
 #include "os.h"
@@ -46,14 +48,6 @@ const char *get_required_root_item(uint8_t i) {
     }
 }
 
-//const char *root_required_items[NUM_REQUIRED_ROOT_PAGES] = {
-//        "chain_id",
-//        "account_number",
-//        "sequence",
-//        "fee",
-//        "memo",
-//        "msgs"
-//};
 
 static const uint16_t root_max_level[NUM_REQUIRED_ROOT_PAGES] = {
         2, // "chain_id",
@@ -65,70 +59,11 @@ static const uint16_t root_max_level[NUM_REQUIRED_ROOT_PAGES] = {
 };
 
 static const key_subst_t key_substitutions[NUM_KEY_SUBSTITUTIONS] = {
-        {"chain_id",                     "Chain ID"},
-        {"account_number",               "Account"},
-        {"sequence",                     "Sequence"},
-        {"memo",                         "Memo"},
-        {"fee/amount",                   "Fee"},
-        {"fee/gas",                      "Gas"},
-        {"msgs/type",                    "Type"},
-
-        // FIXME: Are these obsolete?? multisend?
-        {"msgs/inputs/address",          "Source Address"},
-        {"msgs/inputs/coins",            "Source Coins"},
-        {"msgs/outputs/address",         "Dest Address"},
-        {"msgs/outputs/coins",           "Dest Coins"},
-
-        // MsgSend
-        {"msgs/value/from_address",             "From"},
-        {"msgs/value/to_address",               "To"},
-        {"msgs/value/amount",                   "Amount"},
-
-        // MsgDelegate
-        {"msgs/value/delegator_address", "Delegator"},
-        {"msgs/value/validator_address", "Validator"},
-
-        // MsgUndelegate
-//        {"msgs/value/delegator_address", "Delegator"},
-//        {"msgs/value/validator_address", "Validator"},
-
-        // MsgBeginRedelegate
-//        {"msgs/value/delegator_address", "Delegator"},
-        {"msgs/value/validator_src_address", "Validator Source"},
-        {"msgs/value/validator_dst_address", "Validator Dest"},
-
-        // MsgSubmitProposal
-        {"msgs/value/description",              "Description"},
-        {"msgs/value/initial_deposit/amount",  "Deposit Amount"},
-        {"msgs/value/initial_deposit/denom",   "Deposit Denom"},
-        {"msgs/value/proposal_type",            "Proposal"},
-        {"msgs/value/proposer",                 "Proposer"},
-        {"msgs/value/title",                    "Title"},
-
-        // MsgDeposit
-        {"msgs/value/depositer",                 "Sender"},
-        {"msgs/value/proposal_id",               "Proposal ID"},
-        {"msgs/value/amount",                    "Amount"},
-
-        // MsgVote
-        {"msgs/value/voter",                    "Description"},
-//        {"msgs/value/proposal_id",              "Proposal ID"},
-        {"msgs/value/option",                   "Option"},
-
-        // MsgWithdrawDelegationReward
-//        {"msgs/value/delegator_address", "Delegator"},      // duplicated
-//        {"msgs/value/validator_address", "Validator"},      // duplicated
+        {"Example Key", "Substituted Key"},
 };
 
 static const key_subst_t value_substitutions[NUM_VALUE_SUBSTITUTIONS] = {
-        {"cosmos-sdk/MsgSend", "Send"},
-        {"cosmos-sdk/MsgDelegate", "Delegate"},
-        {"cosmos-sdk/MsgUndelegate", "Undelegate"},
-        {"cosmos-sdk/MsgBeginRedelegate", "Redelegate"},
-        {"cosmos-sdk/MsgSubmitProposal", "Propose"},
-        {"cosmos-sdk/MsgDeposit", "Deposit"},
-        {"cosmos-sdk/MsgVote", "Vote"},
-        {"cosmos-sdk/MsgWithdrawDelegationReward", "Withdraw Reward"},
+        {"Example Value", "Substituted Value"},
 };
 
 #define STRNCPY_S(DST, SRC, DST_SIZE) \
@@ -141,7 +76,7 @@ display_cache_t *tx_display_cache() {
     return &display_cache;
 }
  void tx_display_index_root() {
-    uint32_t totalfields;
+    uint32_t totalpages;
 
     if (parsing_context.cache_valid) {
         return;
@@ -152,62 +87,11 @@ display_cache_t *tx_display_cache() {
     memset(display_cache.num_subpages, 0, NUM_REQUIRED_ROOT_PAGES);
     memset(display_cache.subroot_start_token, TX_TOKEN_NOT_FOUND, NUM_REQUIRED_ROOT_PAGES);
 
-    decode_pb(transaction_get_buffer(),transaction_get_buffer_length(),&totalfields,-1);
+    decode_pb(transaction_get_buffer(),transaction_get_buffer_length(),&totalpages,-1);
 
-    display_cache.num_pages = totalfields;
+    display_cache.num_pages = totalpages;
     parsing_context.cache_valid = 1;
 }
-/*
-void tx_display_index_root() {
-    if (parsing_context.cache_valid) {
-        return;
-    }
-
-    // Clear values
-    display_cache.num_pages = 0;
-    memset(display_cache.num_subpages, 0, NUM_REQUIRED_ROOT_PAGES);
-    memset(display_cache.subroot_start_token, TX_TOKEN_NOT_FOUND, NUM_REQUIRED_ROOT_PAGES);
-
-    // Calculate pages
-    int8_t found = 0;
-    for (int8_t idx = 0; idx < NUM_REQUIRED_ROOT_PAGES; idx++) {
-        const int16_t subroot_token_idx = object_get_value(ROOT_TOKEN_INDEX,
-                                                           get_required_root_item(idx),
-                                                           parsing_context.parsed_tx,
-                                                           parsing_context.tx);
-        if (subroot_token_idx < 0) {
-            break;
-        }
-
-        display_cache.num_subpages[idx] = 0;
-        display_cache.subroot_start_token[idx] = subroot_token_idx;
-
-        char tmp_key[2];
-        char tmp_val[2];
-        INIT_QUERY_CONTEXT(tmp_key, sizeof(tmp_key), tmp_val, sizeof(tmp_val), 0, root_max_level[idx])
-        STRNCPY_S(tx_ctx.query.out_key, get_required_root_item(idx), tx_ctx.query.out_key_len);
-        tx_ctx.max_depth = MAX_RECURSION_DEPTH;
-        tx_ctx.query.item_index = 0;
-
-        found = 0;
-        while (found >= 0) {
-            tx_ctx.item_index_current = 0;
-            found = tx_traverse(subroot_token_idx);
-
-            if (found >= 0) {
-                display_cache.num_subpages[idx]++;
-                tx_ctx.query.item_index++;
-            }
-        };
-        display_cache.num_pages += display_cache.num_subpages[idx];
-
-        if (display_cache.num_subpages[idx] == 0) {
-            break;
-        }
-    }
-
-    parsing_context.cache_valid = 1;
-}*/
 
 int16_t tx_display_num_pages() {
     tx_display_index_root();

@@ -15,10 +15,11 @@
 *  limitations under the License.
 ********************************************************************************/
 
-#include <jsmn.h>
 #include <stdio.h>
+#include <string.h>
 #include "pb_parser.h"
 #include "tx_parser.h"
+#include "os.h"
 
 #if defined(TARGET_NANOX) || defined(TARGET_NANOS)
 #include "os.h"

@@ -74,7 +74,7 @@ uint8_t *transaction_get_buffer() {
 
 const char* transaction_parse() {
     int res;
-    const char *transaction_buffer = (const char *) transaction_get_buffer();
+    const uint8_t *transaction_buffer = transaction_get_buffer();
 
     res = decode_pb(transaction_buffer,transaction_get_buffer_length(),NULL,-1);
     if (res!=1) return "Invalid transaction format";

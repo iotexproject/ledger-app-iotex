@@ -19,6 +19,7 @@
 
 #include "apdu_codes.h"
 #include "zxmacros.h"
+#include "bech32.h"
 
 uint8_t bip32_depth;
 uint32_t bip32_path[10];
