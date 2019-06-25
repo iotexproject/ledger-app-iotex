@@ -21,14 +21,12 @@
 #include "tx_parser.h"
 #include "pb_parser.h"
 
-// TODO: Remove this dependency
-#include "../view.h"
 
 #if defined(TARGET_NANOX)
     #define RAM_BUFFER_SIZE 8192
     #define FLASH_BUFFER_SIZE 16384
 #elif defined(TARGET_NANOS)
-    #define RAM_BUFFER_SIZE 84
+    #define RAM_BUFFER_SIZE 256
     #define FLASH_BUFFER_SIZE 8192
 #endif
 
