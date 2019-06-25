@@ -14,6 +14,9 @@
 *  limitations under the License.
 ********************************************************************************/
 
+#pragma once
+
+#include "stdint.h"
 /* protocol buffer constants */
 #define PB_WIRETYPE_MASK    7       /* AND mask to get wire type bits */
 #define PB_WT_VI            0       /* wire type: varint */
@@ -41,6 +44,12 @@
 #define ACT_EXE_CONTRACT    2       /* contract */
 #define ACT_EXE_DATA        3       /* data */
 
+typedef struct {
+    uint16_t max_chars_per_key_line;
+    uint16_t max_chars_per_value_line;
+    const char *tx;
+    uint8_t cache_valid;
+} parsing_context_t;
 
 uint64_t decode_varint(const uint8_t *buf, uint8_t *skip_bytes, uint8_t max_len);
 

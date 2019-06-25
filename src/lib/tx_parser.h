@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "json_parser.h"
+#include "pb_parser.h"
 #include <stdint.h>
 
 #ifdef __cplusplus
@@ -65,20 +65,10 @@ extern tx_context_t tx_ctx;
         tx_ctx.query.item_index= 0; \
         tx_ctx.query.chunk_index = _CHUNK_IDX;
 
-/// Validate json transaction
-/// \param parsed_transacton
-/// \param transaction
-/// \return
-const char *json_validate(parsed_json_t *parsed_transaction, const char *transaction);
 
 // Traverses transaction data and fills tx_context
 // \return -1 if the item was not found or the number of available chunks for this item
 int16_t tx_traverse(int16_t root_token_index);
-
-// Retrieves the value for the corresponding token index. If the value goes beyond val_len, the chunk_idx will be used
-int16_t tx_get_value(int16_t token_index);
-
-void set_parsing_context(parsing_context_t context);
 
 //---------------------------------------------
 

@@ -1,5 +1,6 @@
 /*******************************************************************************
 *   (c) ZondaX GmbH
+*   (c) 2019 IoTeX
 *
 *  Licensed under the Apache License, Version 2.0 (the "License");
 *  you may not use this file except in compliance with the License.
@@ -17,8 +18,6 @@
 #include "transaction.h"
 #include "apdu_codes.h"
 #include "buffering.h"
-#include "json_parser.h"
-#include "tx_validate.h"
 #include "tx_parser.h"
 #include "pb_parser.h"
 
@@ -50,8 +49,6 @@ storage_t const N_appdata_impl __attribute__ ((aligned(64)));
 #define N_appdata (*(volatile storage_t *)PIC(&N_appdata_impl))
 #endif
 
-parsed_json_t parsed_transaction;
-
 void transaction_initialize() {
     buffering_init(
         ram_buffer,
@@ -80,23 +77,10 @@ uint8_t *transaction_get_buffer() {
 const char* transaction_parse() {
     int res;
     const char *transaction_buffer = (const char *) transaction_get_buffer();
-    /*const char* error_msg = json_parse_s(&parsed_transaction, transaction_buffer, transaction_get_buffer_length());
-    if (error_msg != NULL) {
-        return error_msg;
-    }
-    error_msg = json_validate(&parsed_transaction, transaction_buffer);
-    if (error_msg != NULL) {
-        return error_msg;
-    }*/
+
     res = decode_pb(transaction_buffer,transaction_get_buffer_length(),NULL,-1);
     if (res!=1) return "Invalid transaction format";
 
-    parsing_context_t context;
-    context.tx = transaction_buffer;
-    context.max_chars_per_key_line = MAX_CHARS_PER_KEY_LINE;
-    context.max_chars_per_value_line = MAX_CHARS_PER_VALUE_LINE;
-    context.parsed_tx = &parsed_transaction;
-
-    set_parsing_context(context);
+    parsing_context.cache_valid = 0;
     return NULL;
 }

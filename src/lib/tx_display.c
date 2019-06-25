@@ -18,7 +18,6 @@
 #include <stdio.h>
 #include "tx_parser.h"
 #include "tx_display.h"
-#include "json_parser.h"
 
 #if defined(TARGET_NANOS) || defined(TARGET_NANOX)
 #include "os.h"
