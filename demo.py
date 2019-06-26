@@ -24,7 +24,7 @@ print "public key(32 bytes) + Address: \n" + str(address).encode('hex')
 
 ## sign key 44'/304'/{account}0'/0/{index}0
 print "sign test init...\n"
-initsign = dongle.exchange(bytes("5502010211052c00008030010080000000800000000000000000".decode('hex')))
+initsign = dongle.exchange(bytes("5502010215052c00008030010080000000800000000000000000".decode('hex')))
 print "initsign resp: \n" + str(initsign).encode('hex')
 
 print "sign send...\n"
