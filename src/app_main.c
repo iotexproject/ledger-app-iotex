@@ -1,6 +1,7 @@
 /*******************************************************************************
 *   (c) 2016 Ledger
 *   (c) 2018 ZondaX GmbH
+*   (c) 2019 IoTeX Foundation
 *
 *  Licensed under the Apache License, Version 2.0 (the "License");
 *  you may not use this file except in compliance with the License.

@@ -1,6 +1,6 @@
 /*******************************************************************************
 *   (c) ZondaX GmbH
-*   (c) 2019 IoTeX
+*   (c) 2019 IoTeX Foundation
 *
 *  Licensed under the Apache License, Version 2.0 (the "License");
 *  you may not use this file except in compliance with the License.
