@@ -325,7 +325,7 @@ decode_pb(const uint8_t *pb_data, uint32_t len, uint32_t *totalfields_out, int q
                 uint64_t tsf_len = decode_varint(&pb_data[i], &skip_bytes, len - i);
                 i += skip_bytes;
 
-                if ( -1 == decode_tx_pb(&pb_data[i],&skip_bytes,100, &subtotalfields, queryid - curid )) return -1;
+                if ( -1 == decode_tx_pb(&pb_data[i],&skip_bytes,tsf_len, &subtotalfields, queryid - curid )) return -1;
 
                 totalfields += subtotalfields;
                 curid += subtotalfields;
@@ -340,7 +340,7 @@ decode_pb(const uint8_t *pb_data, uint32_t len, uint32_t *totalfields_out, int q
                 uint64_t exe_len = decode_varint(&pb_data[i], &skip_bytes, len - i);
                 i += skip_bytes;
 
-                if ( -1 == decode_exe_pb(&pb_data[i],&skip_bytes,100,&subtotalfields, queryid - curid )) return -1;
+                if ( -1 == decode_exe_pb(&pb_data[i],&skip_bytes,exe_len,&subtotalfields, queryid - curid )) return -1;
                 
                 totalfields += subtotalfields;
                 curid += subtotalfields;
