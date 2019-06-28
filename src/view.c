@@ -135,7 +135,7 @@ ux_state_t ux;
 
 const ux_menu_entry_t menu_transaction_info[] = {
         {NULL, view_tx_show, 0, NULL, "View transaction", NULL, 0, 0},
-        {NULL, accept, 0, NULL, "Sign transaction", NULL, 0, 0},
+        {NULL, accept, 0, &C_icon_validate_14, "Sign", NULL, 60, 40},
         {NULL, reject, 0, &C_icon_crossmark, "Reject", NULL, 60, 40},
         UX_MENU_END
 };

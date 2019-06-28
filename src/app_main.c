@@ -209,9 +209,6 @@ int16_t tx_getData(char *title, int16_t max_title_length,
     
         INIT_QUERY(key, max_key_length, value, max_value_length, chunk_index)
         decode_pb(transaction_get_buffer(),transaction_get_buffer_length(),NULL,page_index);
-       // *chunk_count_out = tx_display_get_item(page_index);
-
-       // tx_display_make_friendly();
     }
 
     return *chunk_count_out;

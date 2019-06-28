@@ -44,6 +44,9 @@
 #define ACT_EXE_CONTRACT    2       /* contract */
 #define ACT_EXE_DATA        3       /* data */
 
+/* Max payload bytes to display */
+#define MAX_PAYLOAD_DISPLAY 50
+
 typedef struct {
     uint16_t max_chars_per_key_line;
     uint16_t max_chars_per_value_line;

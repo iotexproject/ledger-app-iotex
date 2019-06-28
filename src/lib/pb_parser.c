@@ -118,12 +118,18 @@ decode_tx_pb(const uint8_t *pb_data, uint8_t *skip_bytes_out,uint32_t len, uint3
                 i += skip_bytes;
 
                 if (curid == queryid) {
-                    int cpylen;
-                    cpylen = min(payload_len, tx_ctx.query.out_val_len-1);
+                    int printlen;
+                    printlen = min(payload_len, (tx_ctx.query.out_val_len)/2 -1);
+                    printlen = min(printlen, MAX_PAYLOAD_DISPLAY);
                     snprintf(tx_ctx.query.out_key, tx_ctx.query.out_key_len,
-                         "Payload");
-                    strncpy(tx_ctx.query.out_val,(const char *)&pb_data[i],cpylen);
-                    tx_ctx.query.out_val[cpylen] = 0;
+                         "Payload (%d Bytes)", payload_len);
+                    for (int offset = 0; offset < printlen; offset++)
+                        snprintf(tx_ctx.query.out_val + offset*2, tx_ctx.query.out_val_len-offset*2, "%02X", pb_data[i+offset]);
+
+                    if (payload_len > printlen) {
+                        snprintf(tx_ctx.query.out_val + printlen * 2-3, tx_ctx.query.out_val_len-printlen * 2+3, "...");
+                    }
+                    tx_ctx.query.out_val[printlen * 2] = 0;
                 }
                 i += payload_len;
                 curid++;

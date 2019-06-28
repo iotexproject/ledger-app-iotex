@@ -150,7 +150,7 @@ void viewctl_display_page() {
     strcpy(viewctl.dataKey, "?");
     strcpy(viewctl.dataValue, "?");
 
-    // Read key and value strings from json
+    // Read key and value strings
     viewctl_ehGetData(
             (char *) viewctl.title, sizeof(viewctl.title),
             (char *) viewctl.dataKey, sizeof(viewctl.dataKey),
