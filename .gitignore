@@ -55,9 +55,8 @@ debug/app\.map
 
 debug/app\.asm
 
-bin/app\.hex
-
-bin/app\.elf
+/bin
+/ledger
 
 src/glyphs\.h
 
