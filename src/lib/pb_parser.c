@@ -17,6 +17,7 @@
 #include "string.h"
 #include "stdlib.h"
 #include "stdint.h"
+#include "inttypes.h"
 
 #include "pb_parser.h"
 #include "tx_parser.h"
@@ -279,7 +280,7 @@ decode_pb(const uint8_t *pb_data, uint32_t len, uint32_t *totalfields_out, int q
                     snprintf(tx_ctx.query.out_key, tx_ctx.query.out_key_len,
                          "Nonce");
                     snprintf(tx_ctx.query.out_val, tx_ctx.query.out_val_len,
-                         "%d", nonce);
+                         "%" PRIu64"", nonce);
                 }
                 curid++;
                 break;
@@ -297,7 +298,7 @@ decode_pb(const uint8_t *pb_data, uint32_t len, uint32_t *totalfields_out, int q
                     snprintf(tx_ctx.query.out_key, tx_ctx.query.out_key_len,
                          "Gas Limit");
                     snprintf(tx_ctx.query.out_val, tx_ctx.query.out_val_len,
-                         "%d", gas_limit);
+                         "%" PRIu64"", gas_limit);
                 }
                 curid++;
                 break;
