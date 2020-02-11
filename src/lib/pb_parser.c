@@ -46,6 +46,46 @@ decode_varint(const uint8_t *buf, uint8_t *skip_bytes, uint8_t max_len) {
 	(*skip_bytes) = idx+1;
 	return result;
 }
+
+char *
+u642str(uint64_t num, char *str, size_t max_len) {
+
+    char temp;
+    int last = 0;
+    char *start = str, *end = str;
+
+    if (0 == num) {
+        str[0] = '0';
+        str[1] = 0;
+        return str;
+    }
+
+    while (num != 0) {
+        if (end - start < max_len - 1) {
+            last = num % 10;
+            *end = last + '0';
+            num /= 10;
+            end++;
+        }
+        else {
+            /* buffer too short */
+            return NULL;
+        }
+    }
+
+    /* string ends with \0 */
+    *end = 0;
+
+    while (start < --end) {
+        temp = *start;
+        *start = *end;
+        *end = temp;
+        start++;
+    }
+
+    return str;
+}
+
 int
 decode_tx_pb(const uint8_t *pb_data, uint8_t *skip_bytes_out,uint32_t len, uint32_t *totalfields, int queryid)
 {
@@ -278,8 +318,7 @@ decode_pb(const uint8_t *pb_data, uint32_t len, uint32_t *totalfields_out, int q
                 if (curid == queryid) {
                     snprintf(tx_ctx.query.out_key, tx_ctx.query.out_key_len,
                          "Nonce");
-                    snprintf(tx_ctx.query.out_val, tx_ctx.query.out_val_len,
-                         "%d", nonce);
+                    u642str(nonce, tx_ctx.query.out_val, tx_ctx.query.out_val_len);
                 }
                 curid++;
                 break;
@@ -296,8 +335,7 @@ decode_pb(const uint8_t *pb_data, uint32_t len, uint32_t *totalfields_out, int q
                 if (curid == queryid) {
                     snprintf(tx_ctx.query.out_key, tx_ctx.query.out_key_len,
                          "Gas Limit");
-                    snprintf(tx_ctx.query.out_val, tx_ctx.query.out_val_len,
-                         "%d", gas_limit);
+                    u642str(gas_limit, tx_ctx.query.out_val, tx_ctx.query.out_val_len);
                 }
                 curid++;
                 break;
