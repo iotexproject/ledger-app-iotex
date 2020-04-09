@@ -184,7 +184,7 @@ int16_t tx_getData(char *title, int16_t max_title_length,
                    int16_t *page_count_out,
                    int16_t *chunk_count_out) {
     *page_count_out = tx_display_num_pages();
-    *chunk_count_out = 0;
+    *chunk_count_out = 1;
 
     if (*page_count_out > 0) {
         switch (tx_ctx.actiontype) {
