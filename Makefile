@@ -50,6 +50,9 @@ all: default
 DEFINES   += UNUSED\(x\)=\(void\)x
 DEFINES   += PRINTF\(...\)=
 
+# Debug decode_pb
+#DEFINES   += _DEBUG_PB_DECODE_
+
 APPVERSION=$(APPVERSION_M).$(APPVERSION_N).$(APPVERSION_P)
 DEFINES   += APPVERSION=\"$(APPVERSION)\"
 

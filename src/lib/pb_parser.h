@@ -24,7 +24,9 @@
 #define PB_WT_LD            2       /* wire type: length delimited */
 #define PB_WT_32            5       /* wire type: 32-bit */
 
-#define PB_FIELDNUM_MASK    0xF8    /* AND mask to get field number bits */
+
+#define PB_GET_WTYPE(x) ((x) & PB_WIRETYPE_MASK)
+#define PB_GET_FIELD(x) (((x) >> 3) & 0x1fffffff)
 
 /* IoTeX protobuf fields for message action core */
 #define ACT_VERSION         1       /* version */
@@ -43,16 +45,6 @@
 #define ACT_STAKE_CDD_REGISTER	47
 #define ACT_STAKE_CDD_UPDATE	48
 
-/* IoTeX protobuf fields for message transaction */
-#define ACT_TX_AMOUNT       1       /* amount */
-#define ACT_TX_RECIPIENT    2       /* recipient */
-#define ACT_TX_PAYLOAD      3       /* payload */
-
-/* IoTeX protobuf fields for message execution */
-#define ACT_EXE_AMOUNT      1       /* amount */
-#define ACT_EXE_CONTRACT    2       /* contract */
-#define ACT_EXE_DATA        3       /* data */
-
 /* Max payload bytes to display */
 #define MAX_PAYLOAD_DISPLAY 50
 
@@ -64,7 +56,4 @@ typedef struct {
 } parsing_context_t;
 
 uint64_t decode_varint(const uint8_t *buf, uint8_t *skip_bytes, uint8_t max_len);
-
 int decode_pb(const uint8_t *pb_data, uint32_t len, uint32_t *totalfields, int queryid);
-int decode_tx_pb(const uint8_t *pb_data, uint8_t *skip_bytes_out,uint32_t len, uint32_t *totalfields, int queryid);
-int decode_exe_pb(const uint8_t *pb_data, uint8_t *skip_bytes_out,uint32_t len, uint32_t *totalfields, int queryid);

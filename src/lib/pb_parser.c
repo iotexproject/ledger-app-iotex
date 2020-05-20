@@ -150,214 +150,6 @@ utils_rau2iotx(const char *rau, size_t rau_len, char *iotx, size_t max) {
     return iotx;
 }
 
-int
-decode_tx_pb(const uint8_t *pb_data, uint8_t *skip_bytes_out, uint32_t len, uint32_t *totalfields, int queryid)
-{
-    uint8_t wire_type;
-    uint8_t field_number;
-    uint64_t i;
-    uint8_t skip_bytes;
-    uint32_t total;
-    int curid;
-
-    total = 0;
-    curid = 0;
-    i = 0;
-
-    while (i < len)
-    {
-        wire_type = pb_data[i] & PB_WIRETYPE_MASK;
-        field_number = (pb_data[i] & PB_FIELDNUM_MASK) >> 3;
-
-        switch (field_number)
-        {
-            case ACT_TX_AMOUNT:
-                if (wire_type != PB_WT_LD) return -1; // type doesn't match
-
-                if (i + 1 >= len) return -1;	// overflow
-
-                i++;
-                total++;
-
-                int amount_str_len;
-                amount_str_len = decode_varint(&pb_data[i], &skip_bytes, len - i);
-                i += skip_bytes;
-
-                if (curid == queryid) {
-                    int cpylen;
-                    cpylen = min(amount_str_len, tx_ctx.query.out_val_len - 1);
-                    snprintf(tx_ctx.query.out_key, tx_ctx.query.out_key_len, "Tx Amount");
-
-                    /* Mar 19, 2020 added rau ==> iotx */
-                    utils_rau2iotx((const char *)&pb_data[i], cpylen, tx_ctx.query.out_val, tx_ctx.query.out_val_len);
-                }
-
-                i += amount_str_len;
-                curid++;
-                break;
-
-            case ACT_TX_RECIPIENT:
-                if (wire_type != PB_WT_LD) return -1; // type doesn't match
-
-                if (i + 1 >= len) return -1;	// overflow
-
-                i++;
-                total++;
-
-                int recipent_add_len;
-                recipent_add_len = decode_varint(&pb_data[i], &skip_bytes, len - i);
-                i += skip_bytes;
-
-                if (curid == queryid) {
-                    int cpylen;
-                    cpylen = min(recipent_add_len, tx_ctx.query.out_val_len - 1);
-                    snprintf(tx_ctx.query.out_key, tx_ctx.query.out_key_len, "Recipient");
-                    strncpy(tx_ctx.query.out_val, (const char *)&pb_data[i], cpylen);
-                    tx_ctx.query.out_val[cpylen] = 0;
-                }
-
-                i += recipent_add_len;
-                curid++;
-                break;
-
-            case ACT_TX_PAYLOAD:
-                if (wire_type != PB_WT_LD) return -1; // type doesn't match
-
-                if (i + 1 >= len) return -1;	// overflow
-
-                i++;
-                total++;
-
-                int payload_len;
-                payload_len = decode_varint(&pb_data[i], &skip_bytes, len - i);
-                i += skip_bytes;
-
-                if (curid == queryid) {
-                    int printlen;
-                    printlen = min(payload_len, (tx_ctx.query.out_val_len) / 2 - 1);
-                    printlen = min(printlen, MAX_PAYLOAD_DISPLAY);
-                    snprintf(tx_ctx.query.out_key, tx_ctx.query.out_key_len, "Payload (%d Bytes)", payload_len);
-
-                    for (int offset = 0; offset < printlen; offset++)
-                        snprintf(tx_ctx.query.out_val + offset * 2, tx_ctx.query.out_val_len - offset * 2, "%02X", pb_data[i + offset]);
-
-                    if (payload_len > printlen) {
-                        snprintf(tx_ctx.query.out_val + printlen * 2 - 3, tx_ctx.query.out_val_len - printlen * 2 + 3, "...");
-                    }
-
-                    tx_ctx.query.out_val[printlen * 2] = 0;
-                }
-
-                i += payload_len;
-                curid++;
-                break;
-
-            default:
-                return -1;
-        }
-    }
-
-    (*skip_bytes_out) = i;
-
-    if (totalfields) (*totalfields) = total;
-
-    return 1;
-}
-
-int
-decode_exe_pb(const uint8_t *pb_data, uint8_t *skip_bytes_out, uint32_t len, uint32_t *totalfields, int queryid)
-{
-    uint8_t wire_type;
-    uint8_t field_number;
-    uint64_t i;
-    uint8_t skip_bytes;
-    uint32_t total;
-    int curid;
-
-    total = 0;
-    curid = 0;
-    i = 0;
-
-    while (i < len)
-    {
-        wire_type = pb_data[i] & PB_WIRETYPE_MASK;
-        field_number = (pb_data[i] & PB_FIELDNUM_MASK) >> 3;
-
-        switch (field_number)
-        {
-            case ACT_EXE_AMOUNT:
-                if (wire_type != PB_WT_LD) return -1; // type doesn't match
-
-                if (i + 1 >= len) return -1;	// overflow
-
-                i++;
-                total++;
-
-                int amount_str_len;
-                amount_str_len = decode_varint(&pb_data[i], &skip_bytes, len - i);
-                i += skip_bytes;
-
-                if (curid == queryid) {
-                    int cpylen;
-                    cpylen = min(amount_str_len, tx_ctx.query.out_val_len - 1);
-                    snprintf(tx_ctx.query.out_key, tx_ctx.query.out_key_len, "Exe Amount");
-                    utils_rau2iotx((const char *)&pb_data[i], cpylen, tx_ctx.query.out_val, tx_ctx.query.out_val_len);
-                }
-
-                i += amount_str_len;
-                curid++;
-                break;
-
-            case ACT_EXE_CONTRACT:
-                if (wire_type != PB_WT_LD) return -1; // type doesn't match
-
-                if (i + 1 >= len) return -1;	// overflow
-
-                i++;
-                total++;
-
-                int contract_add_len;
-                contract_add_len = decode_varint(&pb_data[i], &skip_bytes, len - i);
-                i += skip_bytes;
-
-                if (curid == queryid) {
-                    int cpylen;
-                    cpylen = min(contract_add_len, tx_ctx.query.out_val_len - 1);
-                    snprintf(tx_ctx.query.out_key, tx_ctx.query.out_key_len, "Recipient");
-                    strncpy(tx_ctx.query.out_val, (const char *)&pb_data[i], cpylen);
-                    tx_ctx.query.out_val[cpylen] = 0;
-                }
-
-                i += contract_add_len;
-                curid++;
-                break;
-
-            case ACT_EXE_DATA:
-                if (wire_type != PB_WT_LD) return -1; // type doesn't match
-
-                if (i + 1 >= len) return -1;	// overflow
-
-                i++;
-                total++;
-
-                uint32_t datalen;
-                datalen = decode_varint(&pb_data[i], &skip_bytes, len - i);
-                i += skip_bytes;
-                i += datalen;
-                break;
-
-            default:
-                return -1;
-        }
-    }
-
-    (*skip_bytes_out) = i;
-
-    if (totalfields) (*totalfields) = total;
-
-    return 1;
-}
-
 #define KEY_MAX_LEN 20
 
 enum field_type {
@@ -430,8 +222,8 @@ static void display_vi_item(uint64_t number, const struct pb_field *field) {
 }
 
 
-int
-decode_stake_pb(const uint8_t *pb_data, uint8_t *skip_bytes_out, uint32_t len, uint32_t *totalfields, int queryid, int action_id) {
+static int
+decode_action(const uint8_t *pb_data, uint8_t *skip_bytes_out, uint32_t len, uint32_t *totalfields, int queryid, int action_id) {
     static const struct pb_field create_field[] = {
         {"Candidate Name", String},
         {"Staked Amount", Iotx},
@@ -491,12 +283,19 @@ decode_stake_pb(const uint8_t *pb_data, uint8_t *skip_bytes_out, uint32_t len, u
         {"Payload", Bytes},
     };
 
+    static const struct pb_field execution_field[] = {
+        {"Amount", Iotx},
+        {"Contract ", String},
+        {"Data", Bytes},
+    };
+
     uint32_t i = 0;
     uint32_t total = 0;
     int current_id = 0;
 
     uint8_t wire_type;
     uint8_t skip_bytes;
+    uint64_t header = 0;
     uint8_t field_count = 0;
     uint8_t field_number = 0;
     const struct pb_field *action_field = NULL;
@@ -506,6 +305,11 @@ decode_stake_pb(const uint8_t *pb_data, uint8_t *skip_bytes_out, uint32_t len, u
         case ACT_TRANSFER:
             action_field = transfer_field;
             field_count = ARRAY_SIZE(transfer_field);
+            break;
+
+        case ACT_EXECUTION:
+            action_field = execution_field;
+            field_count = ARRAY_SIZE(execution_field);
             break;
 
         case ACT_STAKE_CREATE:
@@ -550,28 +354,28 @@ decode_stake_pb(const uint8_t *pb_data, uint8_t *skip_bytes_out, uint32_t len, u
             break;
 
         default:
-            return -1;
+            return -2;
     }
 
     while (i < len) {
-        wire_type = pb_data[i] & PB_WIRETYPE_MASK;
-        field_number = (pb_data[i] & PB_FIELDNUM_MASK) >> 3;
+        header = decode_varint(pb_data + i, &skip_bytes, len - i);
+        wire_type = PB_GET_WTYPE(header);
+        field_number = PB_GET_FIELD(header);
+        i += skip_bytes;
 
         /* Invalid field number */
         if (!field_number || field_number > field_count) {
-            return -1;
+            return -3;
         }
 
         /* Overflow */
         if (i + 1 >= len) {
-            return -1;
+            return -4;
         }
 
         /* Current field */
-        current_field = action_field + field_number - 1;
-
-        i++;
         total++;
+        current_field = action_field + field_number - 1;
 
         /* Decode a varint for ld msg is msg length, for varint is field value */
         uint64_t number = decode_varint(&pb_data[i], &skip_bytes, len - i);
@@ -583,10 +387,10 @@ decode_stake_pb(const uint8_t *pb_data, uint8_t *skip_bytes_out, uint32_t len, u
                 uint32_t sub_totalfields = 0;
 
                 /* Embedded filed */
-                if (decode_stake_pb(pb_data + i, &sub_skip_bytes, number,
-                                    &sub_totalfields, queryid - current_id,
-                                    GET_EMBMSG_FIELD(current_field->type)) == -1) {
-                    return -1;
+                if (decode_action(pb_data + i, &sub_skip_bytes, number,
+                                  &sub_totalfields, queryid - current_id,
+                                  GET_EMBMSG_FIELD(current_field->type)) == -1) {
+                    return -5;
                 }
 
                 i += number;
@@ -611,7 +415,7 @@ decode_stake_pb(const uint8_t *pb_data, uint8_t *skip_bytes_out, uint32_t len, u
             current_id++;
         }
         else {
-            return -1;
+            return -6;
         }
 
     }
@@ -624,14 +428,16 @@ decode_stake_pb(const uint8_t *pb_data, uint8_t *skip_bytes_out, uint32_t len, u
         *totalfields = total;
     }
 
-    return 1;
+    return 0;
 }
 
 int
 decode_pb(const uint8_t *pb_data, uint32_t len, uint32_t *totalfields_out, int queryid)
 {
+    uint64_t header;
     uint8_t wire_type;
-    uint8_t field_number;
+    uint64_t field_number;
+
     uint64_t i;
     uint8_t skip_bytes;
     uint32_t totalfields;
@@ -641,20 +447,21 @@ decode_pb(const uint8_t *pb_data, uint32_t len, uint32_t *totalfields_out, int q
     totalfields = 0;
     curid = 0;
     i = 0;
+    int ret;
 
-    while (i < len)
-    {
-        wire_type = pb_data[i] & PB_WIRETYPE_MASK;
-        field_number = (pb_data[i] & PB_FIELDNUM_MASK) >> 3;
+    while (i < len) {
+        header = decode_varint(&pb_data[i], &skip_bytes, len - i);
+        wire_type = PB_GET_WTYPE(header);
+        field_number = PB_GET_FIELD(header);
+        i += skip_bytes;
 
-        switch (field_number)
-        {
+
+        switch (field_number) {
             case ACT_VERSION:
                 if (wire_type != PB_WT_VI) return -1; // type doesn't match
 
                 if (i + 1 >= len) return -1;	// overflow
 
-                i++;
                 totalfields++;
 
                 uint32_t version;
@@ -674,7 +481,6 @@ decode_pb(const uint8_t *pb_data, uint32_t len, uint32_t *totalfields_out, int q
 
                 if (i + 1 >= len) return -1;	// overflow
 
-                i++;
                 totalfields++;
 
                 uint64_t nonce;
@@ -694,7 +500,6 @@ decode_pb(const uint8_t *pb_data, uint32_t len, uint32_t *totalfields_out, int q
 
                 if (i + 1 >= len) return -1;	// overflow
 
-                i++;
                 totalfields++;
 
                 uint64_t gas_limit;
@@ -714,7 +519,6 @@ decode_pb(const uint8_t *pb_data, uint32_t len, uint32_t *totalfields_out, int q
 
                 if (i + 1 >= len) return -1;	// overflow
 
-                i++;
                 totalfields++;
 
                 int gas_str_len = decode_varint(&pb_data[i], &skip_bytes, len - i);;
@@ -734,49 +538,7 @@ decode_pb(const uint8_t *pb_data, uint32_t len, uint32_t *totalfields_out, int q
                 break;
 
             case ACT_TRANSFER:
-                if (wire_type != PB_WT_LD) return -1; // type doesn't match
-
-                if (i + 1 >= len) return -1;	// overflow
-
-                tx_ctx.actiontype = ACTION_TX; //action is Transfer TBD fix
-                i++;
-
-                uint64_t tsf_len = decode_varint(&pb_data[i], &skip_bytes, len - i);
-                i += skip_bytes;
-
-#if 0
-
-                if ( -1 == decode_tx_pb(&pb_data[i], &skip_bytes, tsf_len, &subtotalfields, queryid - curid )) return -1;
-
-#endif
-
-                if (-1 == decode_stake_pb(&pb_data[i], &skip_bytes, tsf_len, &subtotalfields, queryid - curid, field_number)) {
-                    return -1;
-                }
-
-                totalfields += subtotalfields;
-                curid += subtotalfields;
-                i += tsf_len;
-                break;
-
             case ACT_EXECUTION:
-                if (wire_type != PB_WT_LD) return -1; // type doesn't match
-
-                if (i + 1 >= len) return -1;	// overflow
-
-                tx_ctx.actiontype = ACTION_EXE; //action is Execution TBD fix
-                i++;
-
-                uint64_t exe_len = decode_varint(&pb_data[i], &skip_bytes, len - i);
-                i += skip_bytes;
-
-                if ( -1 == decode_exe_pb(&pb_data[i], &skip_bytes, exe_len, &subtotalfields, queryid - curid )) return -1;
-
-                totalfields += subtotalfields;
-                curid += subtotalfields;
-                i += exe_len;
-                break;
-
             case ACT_STAKE_CREATE:
             case ACT_STAKE_UNSTAKE:
             case ACT_STAKE_WITHDRAW:
@@ -786,19 +548,28 @@ decode_pb(const uint8_t *pb_data, uint32_t len, uint32_t *totalfields_out, int q
             case ACT_STAKE_TX_OWNERSHIP:
             case ACT_STAKE_CDD_REGISTER:
             case ACT_STAKE_CDD_UPDATE:
-                if (wire_type != PB_WT_LD || i + 1 >= len) {
+                if ((wire_type != PB_WT_LD) || (i + 1 >= len)) {
                     return -1;
                 }
 
                 /* Action type from 1 to ACT_MAX_INVALID */
-                tx_ctx.actiontype = field_number - ACT_STAKE_CREATE + 3;
-                i++;
+                if (ACT_EXECUTION == field_number) {
+                    tx_ctx.actiontype = ACTION_EXE;
+                }
+                else if (ACT_TRANSFER == field_number) {
+                    tx_ctx.actiontype = ACTION_TX;
+                }
+                else {
+                    tx_ctx.actiontype = field_number - ACT_STAKE_CREATE + 3;
+                }
 
                 uint64_t msg_len = decode_varint(&pb_data[i], &skip_bytes, len - i);
                 i += skip_bytes;
 
-                if (-1 == decode_stake_pb(&pb_data[i], &skip_bytes, msg_len, &subtotalfields, queryid - curid, field_number)) {
-                    return -1;
+                ret = decode_action(&pb_data[i], &skip_bytes, msg_len, &subtotalfields, queryid - curid, field_number);
+
+                if (ret != 0) {
+                    return ret;
                 }
 
                 totalfields += subtotalfields;
@@ -807,12 +578,11 @@ decode_pb(const uint8_t *pb_data, uint32_t len, uint32_t *totalfields_out, int q
                 break;
 
             default:
-
-                return -1;
+                return -field_number;
         }
     }
 
     if (totalfields_out) (*totalfields_out) = totalfields;
 
-    return 1;
+    return 0;
 }
