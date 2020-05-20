@@ -175,7 +175,6 @@ bool process_chunk(volatile uint32_t *tx, uint32_t rx, bool getBip32) {
 }
 
 //region View Transaction Handlers
-
 int16_t tx_getData(char *title, int16_t max_title_length,
                    char *key, int16_t max_key_length,
                    char *value, int16_t max_value_length,
@@ -183,29 +182,28 @@ int16_t tx_getData(char *title, int16_t max_title_length,
                    int16_t chunk_index,
                    int16_t *page_count_out,
                    int16_t *chunk_count_out) {
+
+	static const char action_name[][9] = {
+		"INVALID",
+		"Transfer",
+		"Executio",
+		"Create",
+		"Unstake",
+		"Withdraw",
+		"Add Depo",
+		"Restake",
+		"ChgCandi",
+		"TxOwners",
+		"CandiReg",
+		"CdUpdate",
+	};
+
     *page_count_out = tx_display_num_pages();
     *chunk_count_out = 1;
 
     if (*page_count_out > 0) {
-        switch (tx_ctx.actiontype) {
-            case 1:
-                snprintf(title,
-                         max_title_length,
-                         "Act:Transfer %02d/%02d",
-                         page_index + 1,
-                         *page_count_out);
-                break;
-            case 2:
-                snprintf(title,
-                         max_title_length,
-                         "Act: Execution %02d/%02d",
-                         page_index + 1,
-                         *page_count_out);
-                break;
-            default:
-                snprintf(title, max_title_length, "INVALID!");
-                break;
-        }
+        int action_idx = tx_ctx.actiontype < ACTION_MAX_INVALID ? tx_ctx.actiontype : 0;
+        snprintf(title, max_title_length, "Act:%s %02d/%02d", action_name[action_idx], page_index + 1, *page_count_out);
     
         INIT_QUERY(key, max_key_length, value, max_value_length, chunk_index)
         decode_pb(transaction_get_buffer(),transaction_get_buffer_length(),NULL,page_index);

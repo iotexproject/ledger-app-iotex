@@ -32,7 +32,16 @@
 #define ACT_GASLIMIT        3       /* gasLimit */
 #define ACT_GASPRICE        4       /* gasprice */
 #define ACT_TRANSFER        10      /* transfer */
-#define ACT_EXECUTION       12      /*  execution */
+#define ACT_EXECUTION       12      /* execution */
+#define ACT_STAKE_CREATE	40
+#define ACT_STAKE_UNSTAKE	41
+#define ACT_STAKE_WITHDRAW	42
+#define ACT_STAKE_ADD_DEPOSIT	43
+#define ACT_STAKE_RESTAKE	44
+#define ACT_STAKE_CHANGE_CDD	45
+#define ACT_STAKE_TX_OWNERSHIP	46
+#define ACT_STAKE_CDD_REGISTER	47
+#define ACT_STAKE_CDD_UPDATE	48
 
 /* IoTeX protobuf fields for message transaction */
 #define ACT_TX_AMOUNT       1       /* amount */
