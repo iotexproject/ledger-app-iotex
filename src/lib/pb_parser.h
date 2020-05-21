@@ -55,5 +55,16 @@ typedef struct {
     uint8_t cache_valid;
 } parsing_context_t;
 
+typedef enum {
+    DECODE_E_OK,
+    DECODE_E_WTYPE,
+    DECODE_E_LENGTH,
+    DECODE_E_UNSUPPORT,
+    DECODE_E_ACT_FIELD,
+    DECODE_E_EMBMSG_LEN,
+    DECODE_E_FIELD_TYPE,
+    DECODE_E_FIELD_NUMBER,
+} decode_error_t;
+
 uint64_t decode_varint(const uint8_t *buf, uint8_t *skip_bytes, uint8_t max_len);
 int decode_pb(const uint8_t *pb_data, uint32_t len, uint32_t *totalfields, int queryid);

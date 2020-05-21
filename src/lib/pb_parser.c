@@ -354,7 +354,7 @@ decode_action(const uint8_t *pb_data, uint8_t *skip_bytes_out, uint32_t len, uin
             break;
 
         default:
-            return -2;
+            return -DECODE_E_UNSUPPORT;
     }
 
     while (i < len) {
@@ -365,32 +365,32 @@ decode_action(const uint8_t *pb_data, uint8_t *skip_bytes_out, uint32_t len, uin
 
         /* Invalid field number */
         if (!field_number || field_number > field_count) {
-            return -3;
-        }
-
-        /* Overflow */
-        if (i + 1 >= len) {
-            return -4;
+            return -DECODE_E_ACT_FIELD;
         }
 
         /* Current field */
-        total++;
         current_field = action_field + field_number - 1;
 
         /* Decode a varint for ld msg is msg length, for varint is field value */
-        uint64_t number = decode_varint(&pb_data[i], &skip_bytes, len - i);
+        uint64_t number = decode_varint(pb_data + i, &skip_bytes, len - i);
         i += skip_bytes;
 
         if (IS_FILED_TYPE_LD(current_field->type) && (PB_WT_LD == wire_type)) {
+            /* Overflow */
+            if (i + number > len) {
+                return -DECODE_E_EMBMSG_LEN;
+            }
+
+            /* Embedded message, recursive decode */
             if (IS_FIELE_TYPE_EMB(current_field->type)) {
+                int ret;
                 uint8_t sub_skip_bytes = 0;
                 uint32_t sub_totalfields = 0;
 
-                /* Embedded filed */
-                if (decode_action(pb_data + i, &sub_skip_bytes, number,
-                                  &sub_totalfields, queryid - current_id,
-                                  GET_EMBMSG_FIELD(current_field->type)) == -1) {
-                    return -5;
+                if ((ret = decode_action(pb_data + i, &sub_skip_bytes, number,
+                                         &sub_totalfields, queryid - current_id,
+                                         GET_EMBMSG_FIELD(current_field->type))) != 0) {
+                    return ret;
                 }
 
                 i += number;
@@ -404,6 +404,7 @@ decode_action(const uint8_t *pb_data, uint8_t *skip_bytes_out, uint32_t len, uin
                 display_ld_item(pb_data + i, number, current_field);
             }
 
+            total++;
             i += number;
             current_id++;
         }
@@ -412,10 +413,11 @@ decode_action(const uint8_t *pb_data, uint8_t *skip_bytes_out, uint32_t len, uin
                 display_vi_item(number, current_field);
             }
 
+            total++;
             current_id++;
         }
         else {
-            return -6;
+            return -DECODE_E_FIELD_TYPE;
         }
 
     }
@@ -548,8 +550,12 @@ decode_pb(const uint8_t *pb_data, uint32_t len, uint32_t *totalfields_out, int q
             case ACT_STAKE_TX_OWNERSHIP:
             case ACT_STAKE_CDD_REGISTER:
             case ACT_STAKE_CDD_UPDATE:
-                if ((wire_type != PB_WT_LD) || (i + 1 >= len)) {
-                    return -1;
+                if (wire_type != PB_WT_LD) {
+                    return -DECODE_E_WTYPE;
+                }
+
+                if (i + 1 >= len) {
+                    return -DECODE_E_LENGTH;
                 }
 
                 /* Action type from 1 to ACT_MAX_INVALID */
@@ -560,15 +566,18 @@ decode_pb(const uint8_t *pb_data, uint32_t len, uint32_t *totalfields_out, int q
                     tx_ctx.actiontype = ACTION_TX;
                 }
                 else {
-                    tx_ctx.actiontype = field_number - ACT_STAKE_CREATE + 3;
+                    tx_ctx.actiontype = field_number - ACT_STAKE_CREATE + ACTION_SKT_CREATE;
                 }
 
+                /* Action length */
                 uint64_t msg_len = decode_varint(&pb_data[i], &skip_bytes, len - i);
                 i += skip_bytes;
 
-                ret = decode_action(&pb_data[i], &skip_bytes, msg_len, &subtotalfields, queryid - curid, field_number);
+                if (i + msg_len > len) {
+                    return -DECODE_E_EMBMSG_LEN;
+                }
 
-                if (ret != 0) {
+                if ((ret = decode_action(&pb_data[i], &skip_bytes, msg_len, &subtotalfields, queryid - curid, field_number)) != 0) {
                     return ret;
                 }
 
@@ -578,7 +587,7 @@ decode_pb(const uint8_t *pb_data, uint32_t len, uint32_t *totalfields_out, int q
                 break;
 
             default:
-                return -field_number;
+                return -DECODE_E_FIELD_NUMBER;
         }
     }
 
