@@ -25,7 +25,7 @@ include $(BOLOS_SDK)/Makefile.defines
 APPNAME = "IoTeX"
 APPVERSION_M=0
 APPVERSION_N=1
-APPVERSION_P=3
+APPVERSION_P=4
 
 APP_LOAD_PARAMS = --appFlags 0x200 --delete $(COMMON_LOAD_PARAMS) --path "44'/304'"
 
@@ -49,6 +49,9 @@ all: default
 
 DEFINES   += UNUSED\(x\)=\(void\)x
 DEFINES   += PRINTF\(...\)=
+
+# Debug decode_pb
+#DEFINES   += _DEBUG_PB_DECODE_
 
 APPVERSION=$(APPVERSION_M).$(APPVERSION_N).$(APPVERSION_P)
 DEFINES   += APPVERSION=\"$(APPVERSION)\"

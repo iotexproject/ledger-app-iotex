@@ -72,12 +72,13 @@ uint8_t *transaction_get_buffer() {
     return buffering_get_buffer()->data;
 }
 
-const char* transaction_parse() {
-    int res;
+const char* transaction_parse(int *error_code) {
     const uint8_t *transaction_buffer = transaction_get_buffer();
 
-    res = decode_pb(transaction_buffer,transaction_get_buffer_length(),NULL,-1);
-    if (res!=1) return "Invalid transaction format";
+    *error_code = decode_pb(transaction_buffer,transaction_get_buffer_length(), NULL, -1);
+    if (*error_code != 0) {
+        return "Invalid transaction format";
+    }
 
     parsing_context.cache_valid = 0;
     return NULL;

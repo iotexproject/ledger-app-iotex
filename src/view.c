@@ -373,7 +373,7 @@ void view_tx_show(unsigned int start_page) {
 
 void view_addr_choose_update() {
     print_title("Account %u", view_addr_choose_data.account);
-    print_key("Index %u", view_addr_choose_data.index);
+    viewctl.dataKey[0] = 0;
 
     print_value("...");
     if (view_addr_choose_data.status.mode == VIEW_ADDR_MODE_SHOW) {
@@ -404,7 +404,7 @@ void view_addr_choose_refresh() {
 
 void view_addr_choose_show(unsigned int _) {
     // Initialize show view
-    view_addr_choose_data.status.mode = VIEW_ADDR_MODE_ACCOUNT;
+    view_addr_choose_data.status.mode = VIEW_ADDR_MODE_SHOW;
     view_addr_choose_data.account = 0;
     view_addr_choose_data.index = 0;
     strcpy(bech32_hrp, "io");
