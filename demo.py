@@ -62,7 +62,7 @@ fake_pb_data = {
     # payload: "world"
     # """
     "StakeRestake": "080110021803220134e2020c080a101418012204c28ae574",
-
+  
     # """
     # 6. StakeChangeCandidate
     # version=1,nonce=2,gasLimit=3,gasPrice=4
