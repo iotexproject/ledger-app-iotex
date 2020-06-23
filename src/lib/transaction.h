@@ -41,4 +41,4 @@ uint8_t *transaction_get_buffer();
 /// Parse json message stored in transaction buffer
 /// This function should be called as soon as full buffer data is loaded.
 /// \return It returns NULL if json is valid or error message otherwise.
-const char *transaction_parse();
+const char *transaction_parse(int *error_code);
