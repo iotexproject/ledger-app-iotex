@@ -42,6 +42,8 @@ const uint8_t privateKeyDataTest[] = {
 };
 #endif
 
+static const char const SIGN_MAGIC[] = "\x16IoTeX Signed Message:\n";
+
 unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 
 unsigned char io_event(unsigned char channel) {
@@ -303,13 +305,81 @@ void addr_accept() {
     view_idle(0);
 }
 
+
+//endregion
+
 void addr_reject() {
     set_code(G_io_apdu_buffer, 0, APDU_CODE_COMMAND_NOT_ALLOWED);
     io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
     view_idle(0);
 }
 
-//endregion
+
+// region sign personal message
+int16_t smsg_getData(char *title, int16_t max_title_length,
+                     char *key, int16_t max_key_length,
+                     char *value, int16_t max_value_length,
+                     int16_t page_index,
+                     int16_t chunk_index,
+                     int16_t *page_count_out,
+                     int16_t *chunk_count_out) {
+
+    if (page_count_out)
+        *page_count_out = 1;
+    if (chunk_count_out)
+        *chunk_count_out = 1;
+
+    uint8_t message_digest[CX_SHA256_SIZE];
+    cx_hash_sha256(transaction_get_buffer(),
+                   transaction_get_buffer_length(),
+                   message_digest,
+                   CX_SHA256_SIZE);
+
+    snprintf(title, max_title_length, "Message Hash");
+    snprintf(key, max_key_length, "Length: %d", transaction_get_buffer_length());
+    snprintf(value, max_value_length, "%.*H", sizeof(message_digest), message_digest);
+    return 0;
+}
+
+
+void smsg_accept() {
+    int result;
+    uint32_t length;
+    uint8_t sign_msg[280];
+    uint8_t private_key_data[32];
+    cx_ecfp_public_key_t public_key;
+    cx_ecfp_private_key_t private_key;
+
+    /* Copy sign magic to sign message */
+    memset(sign_msg, 0, sizeof(sign_msg));
+    memcpy(sign_msg, SIGN_MAGIC, strlen(SIGN_MAGIC));
+
+    /* Append byte length and byte to sign msg */
+    sign_msg[strlen(SIGN_MAGIC)] = transaction_get_buffer_length();
+    memcpy(sign_msg + strlen(SIGN_MAGIC) + 1, transaction_get_buffer(), transaction_get_buffer_length());
+
+    keys_secp256k1(&public_key, &private_key, private_key_data);
+    memset(private_key_data, 0, sizeof(private_key_data));
+
+    result = sign_secp256k1(sign_msg,
+                            strlen(SIGN_MAGIC) + 1 + transaction_get_buffer_length(),
+                            G_io_apdu_buffer,
+                            IO_APDU_BUFFER_SIZE,
+                            &length,
+                            &private_key);
+
+    set_code(G_io_apdu_buffer, length, result ? APDU_CODE_OK : APDU_CODE_SIGN_VERIFY_ERROR);
+    io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, length + 2);
+    view_idle(0);
+}
+
+void smsg_reject() {
+    set_code(G_io_apdu_buffer, 0, APDU_CODE_COMMAND_NOT_ALLOWED);
+    io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
+    view_idle(0);
+}
+
+// endregion
 
 void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
     uint16_t sw = 0;
@@ -409,9 +479,28 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
                     view_set_handlers(tx_getData, tx_accept_sign, tx_reject);
                     view_tx_show(0);
 
+//                    view_set_handlers(smsg_getData, smsg_accept, smsg_reject);
+//                    view_smsg_show(0);
+
                     *flags |= IO_ASYNCH_REPLY;
                     break;
                 }
+
+                case INS_SIGN_PERSONAL_MESSAGE: {
+                    if (process_chunk(tx, rx, false)) {
+
+                        /* Maximum sign message length is 255 */
+                        if (transaction_get_buffer_length() > 255) {
+                            THROW(APDU_CODE_WRONG_LENGTH);
+                        }
+
+                        view_set_handlers(smsg_getData, smsg_accept, smsg_reject);
+                        view_smsg_show(0);
+                        *flags |= IO_ASYNCH_REPLY;
+                    }
+                    THROW(APDU_CODE_OK);
+                }
+                break;
 
 #ifdef TESTING_ENABLED
                 case INS_HASH_TEST: {

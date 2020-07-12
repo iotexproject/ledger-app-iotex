@@ -153,7 +153,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         if sys.argv[1] in fake_pb_data:
             action = sys.argv[1]
-            print("Action: {}".format(action))
+            print("Action: {}, length:{}".format(action, len(bytearray.fromhex(fake_pb_data.get(action)))))
             sign(bytearray.fromhex(fake_pb_data.get(action)))
         else:
             sign(bytearray.fromhex(sys.argv[1]))
