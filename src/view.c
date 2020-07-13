@@ -65,7 +65,7 @@ void show_idle_menu() {
 }
 
 void view_tx_menu(unsigned int _);
-
+void view_smsg_menu(unsigned int _);
 void view_addr_choose_show(unsigned int _);
 
 void view_addr_choose_refresh();
@@ -128,6 +128,17 @@ const ux_flow_step_t *const ux_addr_flow [] = {
   &ux_addr_flow_4_step,
   FLOW_END_STEP,
 };
+
+UX_FLOW_DEF_VALID(ux_tx_flow_1_step, pbb, view_spm_show(0), { &C_icon_eye, "Review", "Sign Message" });
+UX_FLOW_DEF_VALID(ux_tx_flow_2_step, pbb, accept(0), { &C_icon_validate_14, "Sign", "Sign Message" });
+UX_FLOW_DEF_VALID(ux_tx_flow_3_step, pbb, reject(0), { &C_icon_crossmark, "Reject", "Sign Message" });
+const ux_flow_step_t *const ux_tx_flow [] = {
+  &ux_tx_flow_1_step,
+  &ux_tx_flow_2_step,
+  &ux_tx_flow_3_step,
+  FLOW_END_STEP,
+};
+
 #else
 
 // Nano S
@@ -154,6 +165,13 @@ const ux_menu_entry_t menu_main[] = {
 
 const ux_menu_entry_t menu_status[] = {
         {NULL, NULL, 0, &C_icon_app, viewctl.dataKey, viewctl.dataValue, 33, 12},
+        UX_MENU_END
+};
+
+const ux_menu_entry_t menu_sign_msg[] = {
+        {NULL, view_smsg_show, 0, NULL, "Sign Message", NULL, 0, 0},
+        {NULL, accept, 0, &C_icon_validate_14, "Sign", NULL, 60, 40},
+        {NULL, reject, 0, &C_icon_crossmark, "Reject", NULL, 60, 40},
         UX_MENU_END
 };
 
@@ -371,6 +389,14 @@ void view_tx_show(unsigned int start_page) {
 
 }
 
+void view_smsg_show(unsigned int start_page) {
+    if (!ehGetData)  {
+        return;
+    }
+
+    viewexpl_start(start_page, ehGetData, NULL, view_smsg_menu);
+}
+
 void view_addr_choose_update() {
     print_title("Account %u", view_addr_choose_data.account);
     viewctl.dataKey[0] = 0;
@@ -437,6 +463,19 @@ void view_tx_menu(unsigned int unused) {
 
 #if defined(TARGET_NANOS)
     UX_MENU_DISPLAY(0, menu_transaction_info, NULL);
+#elif defined(TARGET_NANOX)
+    if(G_ux.stack_count == 0) {
+        ux_stack_push();
+    }
+    ux_flow_init(0, ux_tx_flow, NULL);
+#endif
+}
+
+void view_smsg_menu(unsigned int unused) {
+    UNUSED(unused);
+
+#if defined(TARGET_NANOS)
+    UX_MENU_DISPLAY(0, menu_sign_msg, NULL);
 #elif defined(TARGET_NANOX)
     if(G_ux.stack_count == 0) {
         ux_stack_push();

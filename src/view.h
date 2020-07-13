@@ -41,5 +41,8 @@ void view_status();
 /// view_tx_show (show/review transaction view)
 void view_tx_show(unsigned int start_page);
 
+/// view_spm_show (show/review sign personal message view)
+void view_smsg_show(unsigned int start_page);
+
 /// view_addr_confirm (show/accept public key + address request)
 void view_addr_confirm(unsigned int _);
