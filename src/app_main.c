@@ -325,20 +325,30 @@ int16_t smsg_getData(char *title, int16_t max_title_length,
                      int16_t *page_count_out,
                      int16_t *chunk_count_out) {
 
-    if (page_count_out)
-        *page_count_out = 1;
-    if (chunk_count_out)
+    uint32_t length;
+    const uint32_t max_display_length = 128;
+    const uint32_t last_page_length = (transaction_get_buffer_length() * 2) % max_display_length;
+
+    if (page_count_out) {
+        *page_count_out = (transaction_get_buffer_length() * 2) / max_display_length + (last_page_length != 0);
+    }
+
+    if (chunk_count_out) {
         *chunk_count_out = 1;
+    }
 
-    uint8_t message_digest[CX_SHA256_SIZE];
-    cx_hash_sha256(transaction_get_buffer(),
-                   transaction_get_buffer_length(),
-                   message_digest,
-                   CX_SHA256_SIZE);
+    if (page_index + 1 != *page_count_out) {
+        length = max_display_length;
+    }
+    else {
+        length = last_page_length ? last_page_length : max_display_length;
+    }
 
-    snprintf(title, max_title_length, "Message Hash");
+    length = length ? length : max_display_length;
+    snprintf(title, max_title_length, "Raw Message %02d/%02d", page_index + 1, *page_count_out);
     snprintf(key, max_key_length, "Length: %d", transaction_get_buffer_length());
-    snprintf(value, max_value_length, "%.*H", sizeof(message_digest), message_digest);
+    snprintf(value, max_value_length, "%.*H", length / 2, transaction_get_buffer() + page_index * max_display_length / 2);
+
     return 0;
 }
 
@@ -542,7 +552,6 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
                         }
 
                         tx_display_index_root();
-
                         view_set_handlers(smsg_getData, smsg_accept, smsg_reject);
                         view_smsg_show(0);
 
