@@ -316,6 +316,7 @@ void addr_reject() {
 
 
 // region sign personal message
+static uint32_t num2str(uint32_t num, char *str, size_t max_len);
 int16_t smsg_getData(char *title, int16_t max_title_length,
                      char *key, int16_t max_key_length,
                      char *value, int16_t max_value_length,
@@ -324,45 +325,103 @@ int16_t smsg_getData(char *title, int16_t max_title_length,
                      int16_t *page_count_out,
                      int16_t *chunk_count_out) {
 
-    if (page_count_out)
-        *page_count_out = 1;
-    if (chunk_count_out)
+    uint32_t length;
+    const uint32_t max_display_length = 128;
+    const uint32_t last_page_length = (transaction_get_buffer_length() * 2) % max_display_length;
+
+    if (page_count_out) {
+        *page_count_out = (transaction_get_buffer_length() * 2) / max_display_length + (last_page_length != 0);
+    }
+
+    if (chunk_count_out) {
         *chunk_count_out = 1;
+    }
 
-    uint8_t message_digest[CX_SHA256_SIZE];
-    cx_hash_sha256(transaction_get_buffer(),
-                   transaction_get_buffer_length(),
-                   message_digest,
-                   CX_SHA256_SIZE);
+    if (page_index + 1 != *page_count_out) {
+        length = max_display_length;
+    }
+    else {
+        length = last_page_length ? last_page_length : max_display_length;
+    }
 
-    snprintf(title, max_title_length, "Message Hash");
+    length = length ? length : max_display_length;
+    snprintf(title, max_title_length, "Raw Message %02d/%02d", page_index + 1, *page_count_out);
     snprintf(key, max_key_length, "Length: %d", transaction_get_buffer_length());
-    snprintf(value, max_value_length, "%.*H", sizeof(message_digest), message_digest);
+    snprintf(value, max_value_length, "%.*H", length / 2, transaction_get_buffer() + page_index * max_display_length / 2);
+  
     return 0;
 }
 
+
+static uint32_t num2str(uint32_t num, char *str, size_t max_len) {
+    char temp;
+    int last = 0;
+    uint32_t length = 0;
+    char *start = str, *end = str;
+
+    if (0 == num) {
+        str[0] = '0';
+        str[1] = 0;
+        return 1;
+    }
+
+    while (num != 0) {
+        if (end - start < max_len - 1) {
+            last = num % 10;
+            *end = last + '0';
+            num /= 10;
+            end++;
+            length++;
+        }
+        else {
+            /* buffer too short */
+            return length;
+        }
+    }
+
+    /* string ends with \0 */
+    *end = 0;
+
+    while (start < --end) {
+        temp = *start;
+        *start = *end;
+        *end = temp;
+        start++;
+    }
+
+    return length;
+}
 
 void smsg_accept() {
     int result;
     uint32_t length;
     uint8_t sign_msg[280];
     uint8_t private_key_data[32];
+    const uint32_t sign_magic_length = strlen(SIGN_MAGIC);
+  
     cx_ecfp_public_key_t public_key;
     cx_ecfp_private_key_t private_key;
 
     /* Copy sign magic to sign message */
     memset(sign_msg, 0, sizeof(sign_msg));
-    memcpy(sign_msg, SIGN_MAGIC, strlen(SIGN_MAGIC));
+    memcpy(sign_msg, SIGN_MAGIC, sign_magic_length);
 
     /* Append byte length and byte to sign msg */
-    sign_msg[strlen(SIGN_MAGIC)] = transaction_get_buffer_length();
-    memcpy(sign_msg + strlen(SIGN_MAGIC) + 1, transaction_get_buffer(), transaction_get_buffer_length());
+    length = num2str(transaction_get_buffer_length(),
+                     (char *)(sign_msg + sign_magic_length),
+                     sizeof(sign_msg) - sign_magic_length);
+    memcpy(sign_msg + sign_magic_length + length, transaction_get_buffer(), transaction_get_buffer_length());
+
+
+    os_perso_derive_node_bip32(CX_CURVE_256K1,
+                               bip32_path, bip32_depth,
+                               private_key_data, NULL);
 
     keys_secp256k1(&public_key, &private_key, private_key_data);
     memset(private_key_data, 0, sizeof(private_key_data));
 
     result = sign_secp256k1(sign_msg,
-                            strlen(SIGN_MAGIC) + 1 + transaction_get_buffer_length(),
+                            sign_magic_length + length + transaction_get_buffer_length(),
                             G_io_apdu_buffer,
                             IO_APDU_BUFFER_SIZE,
                             &length,
@@ -479,23 +538,21 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
                     view_set_handlers(tx_getData, tx_accept_sign, tx_reject);
                     view_tx_show(0);
 
-//                    view_set_handlers(smsg_getData, smsg_accept, smsg_reject);
-//                    view_smsg_show(0);
-
                     *flags |= IO_ASYNCH_REPLY;
                     break;
                 }
 
                 case INS_SIGN_PERSONAL_MESSAGE: {
-                    if (process_chunk(tx, rx, false)) {
-
+                    if (process_chunk(tx, rx, true)) {
                         /* Maximum sign message length is 255 */
                         if (transaction_get_buffer_length() > 255) {
                             THROW(APDU_CODE_WRONG_LENGTH);
                         }
 
+                        tx_display_index_root();
                         view_set_handlers(smsg_getData, smsg_accept, smsg_reject);
                         view_smsg_show(0);
+                      
                         *flags |= IO_ASYNCH_REPLY;
                     }
                     THROW(APDU_CODE_OK);

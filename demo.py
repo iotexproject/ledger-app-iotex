@@ -17,6 +17,15 @@ fake_pb_data = {
     "tx3": "0801100318a08d06220d3130303030303030303030303052350a0831303030303030301229696f313365736c6d306165366d64726"
            "a32757a3763323630616a363730776b6479777461796533676b",
 
+    "hello": "68656c6c6f",
+
+    "data64": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f",
+
+    "data65": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f40",
+
+    "data128": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f40"
+               "4142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f",
+
     # """
     # 1. StakeCreate
     # version=1,nonce=2,gasLimit=3,gasPrice=4
@@ -114,7 +123,7 @@ fake_pb_data = {
 }
 
 
-def sign(trantosign):
+def sign(trantosign, raw_msg=False):
     # Get version
     print("Get Version ...")
     dongle = getDongle(True)
@@ -145,7 +154,8 @@ def sign(trantosign):
     print("Sign request (2 of 2 package):...\n")
 
     # Action name or raw data
-    signature = dongle.exchange(bytearray.fromhex("55020202") + bytes([len(trantosign)]) + trantosign)
+    ins = "55050202" if raw_msg else "55020202"
+    signature = dongle.exchange(bytearray.fromhex(ins) + bytes([len(trantosign)]) + trantosign)
     print("signature resp: {}".format(signature.hex()))
 
 
@@ -153,8 +163,9 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         if sys.argv[1] in fake_pb_data:
             action = sys.argv[1]
-            print("Action: {}, length:{}".format(action, len(bytearray.fromhex(fake_pb_data.get(action)))))
-            sign(bytearray.fromhex(fake_pb_data.get(action)))
+            raw_msg = True if len(sys.argv) >= 3 and sys.argv[2] == "raw_msg" else False
+            print("Action: {}, length:{}, raw msg: {}".format(action, len(bytearray.fromhex(fake_pb_data.get(action))), raw_msg))
+            sign(bytearray.fromhex(fake_pb_data.get(action)), raw_msg)
         else:
             sign(bytearray.fromhex(sys.argv[1]))
     else:
