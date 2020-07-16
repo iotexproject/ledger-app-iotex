@@ -348,7 +348,7 @@ int16_t smsg_getData(char *title, int16_t max_title_length,
     snprintf(title, max_title_length, "Raw Message %02d/%02d", page_index + 1, *page_count_out);
     snprintf(key, max_key_length, "Length: %d", transaction_get_buffer_length());
     snprintf(value, max_value_length, "%.*H", length / 2, transaction_get_buffer() + page_index * max_display_length / 2);
-
+  
     return 0;
 }
 
@@ -392,15 +392,13 @@ static uint32_t num2str(uint32_t num, char *str, size_t max_len) {
     return length;
 }
 
-
-
 void smsg_accept() {
     int result;
     uint32_t length;
     uint8_t sign_msg[280];
     uint8_t private_key_data[32];
     const uint32_t sign_magic_length = strlen(SIGN_MAGIC);
-
+  
     cx_ecfp_public_key_t public_key;
     cx_ecfp_private_key_t private_key;
 
@@ -418,6 +416,7 @@ void smsg_accept() {
     os_perso_derive_node_bip32(CX_CURVE_256K1,
                                bip32_path, bip32_depth,
                                private_key_data, NULL);
+
     keys_secp256k1(&public_key, &private_key, private_key_data);
     memset(private_key_data, 0, sizeof(private_key_data));
 
@@ -545,7 +544,6 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
 
                 case INS_SIGN_PERSONAL_MESSAGE: {
                     if (process_chunk(tx, rx, true)) {
-
                         /* Maximum sign message length is 255 */
                         if (transaction_get_buffer_length() > 255) {
                             THROW(APDU_CODE_WRONG_LENGTH);
@@ -554,7 +552,7 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
                         tx_display_index_root();
                         view_set_handlers(smsg_getData, smsg_accept, smsg_reject);
                         view_smsg_show(0);
-
+                      
                         *flags |= IO_ASYNCH_REPLY;
                     }
                     THROW(APDU_CODE_OK);
