@@ -47,6 +47,21 @@ typedef struct {
     char actiontype;
 } tx_context_t;
 
+enum tx_actiontype {
+	ACTION_TX = 1,
+	ACTION_EXE,
+	ACTION_SKT_CREATE,
+	ACTION_SKT_UNSTAKE,
+	ACTION_SKT_WITHDRAW,
+	ACTION_SKT_ADD_DEPOSIT,
+	ACTION_SKT_RESTAKE,
+	ACTION_SKT_CHANGE_CDD,
+	ACTION_SKT_TX_OWNERSHIP,
+	ACTION_SKT_CDD_REGISTER,
+	ACTION_SKT_CDD_UPDATE,
+	ACTION_MAX_INVALID
+};
+
 extern parsing_context_t parsing_context;
 extern tx_context_t tx_ctx;
 
