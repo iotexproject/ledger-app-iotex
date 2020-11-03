@@ -25,7 +25,7 @@ include $(BOLOS_SDK)/Makefile.defines
 APPNAME = "IoTeX"
 APPVERSION_M=0
 APPVERSION_N=1
-APPVERSION_P=6
+APPVERSION_P=7
 
 APP_LOAD_PARAMS = --tlvraw 9F:01
 APP_LOAD_PARAMS += --appFlags 0x200 --delete $(COMMON_LOAD_PARAMS) --path "44'/304'"
