@@ -129,13 +129,13 @@ const ux_flow_step_t *const ux_addr_flow [] = {
   FLOW_END_STEP,
 };
 
-UX_FLOW_DEF_VALID(ux_tx_flow_1_step, pbb, view_spm_show(0), { &C_icon_eye, "Review", "Sign Message" });
-UX_FLOW_DEF_VALID(ux_tx_flow_2_step, pbb, accept(0), { &C_icon_validate_14, "Sign", "Sign Message" });
-UX_FLOW_DEF_VALID(ux_tx_flow_3_step, pbb, reject(0), { &C_icon_crossmark, "Reject", "Sign Message" });
-const ux_flow_step_t *const ux_tx_flow [] = {
-  &ux_tx_flow_1_step,
-  &ux_tx_flow_2_step,
-  &ux_tx_flow_3_step,
+UX_FLOW_DEF_VALID(ux_smsg_flow_1_step, pbb, view_smsg_show(0), { &C_icon_eye, "Review", "Sign Message" });
+UX_FLOW_DEF_VALID(ux_smsg_flow_2_step, pbb, accept(0), { &C_icon_validate_14, "Sign", "Sign Message" });
+UX_FLOW_DEF_VALID(ux_smsg_flow_3_step, pbb, reject(0), { &C_icon_crossmark, "Reject", "Sign Message" });
+const ux_flow_step_t *const ux_smsg_flow [] = {
+  &ux_smsg_flow_1_step,
+  &ux_smsg_flow_2_step,
+  &ux_smsg_flow_3_step,
   FLOW_END_STEP,
 };
 
@@ -480,7 +480,7 @@ void view_smsg_menu(unsigned int unused) {
     if(G_ux.stack_count == 0) {
         ux_stack_push();
     }
-    ux_flow_init(0, ux_tx_flow, NULL);
+    ux_flow_init(0, ux_smsg_flow, NULL);
 #endif
 }
 
