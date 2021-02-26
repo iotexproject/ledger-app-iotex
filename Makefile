@@ -32,7 +32,6 @@ APP_LOAD_PARAMS = --tlvraw 9F:01
 DEFINES   += HAVE_PENDING_REVIEW_SCREEN
 
 ifeq ($(TARGET_NAME),TARGET_NANOS)
-SCRIPT_LD:=$(CURDIR)/script.ld
 ICONNAME:=$(CURDIR)/nanos_icon.gif
 endif
 
