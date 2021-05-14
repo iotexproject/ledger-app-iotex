@@ -10,6 +10,11 @@
 #endif
 
 /* Enum definitions */
+typedef enum _iotextypes_Encoding { 
+    iotextypes_Encoding_IOTEX_PROTOBUF = 0, 
+    iotextypes_Encoding_ETHEREUM_RLP = 1 
+} iotextypes_Encoding;
+
 typedef enum _iotextypes_RewardType { 
     iotextypes_RewardType_BlockReward = 0, 
     iotextypes_RewardType_EpochReward = 1 
@@ -23,12 +28,6 @@ typedef struct _iotextypes_Candidate {
     pb_callback_t pubKey; 
     pb_callback_t rewardAddress; 
 } iotextypes_Candidate;
-
-typedef struct _iotextypes_CandidateBasicInfo { 
-    pb_callback_t name; 
-    pb_callback_t operatorAddress; 
-    pb_callback_t rewardAddress; 
-} iotextypes_CandidateBasicInfo;
 
 typedef struct _iotextypes_CandidateList { 
     pb_callback_t candidates; 
@@ -112,15 +111,11 @@ typedef struct _iotextypes_BlockEvmTransfer {
     pb_callback_t actionEvmTransfers; 
 } iotextypes_BlockEvmTransfer;
 
-typedef struct _iotextypes_CandidateRegister { 
-    bool has_candidate;
-    iotextypes_CandidateBasicInfo candidate; 
-    pb_callback_t stakedAmount; 
-    uint32_t stakedDuration; 
-    bool autoStake; 
-    pb_callback_t ownerAddress; /* if ownerAddress is absent, owner of candidate is the sender */
-    pb_callback_t payload; 
-} iotextypes_CandidateRegister;
+typedef struct _iotextypes_CandidateBasicInfo { 
+    char name[42]; 
+    char operatorAddress[42]; 
+    char rewardAddress[42]; 
+} iotextypes_CandidateBasicInfo;
 
 typedef struct _iotextypes_CreateDeposit { 
     uint32_t chainID; 
@@ -140,6 +135,7 @@ typedef struct _iotextypes_Log {
     uint64_t blkHeight; 
     pb_callback_t actHash; 
     uint32_t index; 
+    pb_callback_t blkHash; 
 } iotextypes_Log;
 
 typedef struct _iotextypes_PlumChallengeExit { 
@@ -211,6 +207,7 @@ typedef struct _iotextypes_Receipt {
     uint64_t gasConsumed; 
     pb_callback_t contractAddress; 
     pb_callback_t logs; 
+    pb_callback_t executionRevertMsg; 
 } iotextypes_Receipt;
 
 typedef struct _iotextypes_SettleDeposit { 
@@ -277,11 +274,23 @@ typedef struct _iotextypes_StopSubChain {
     pb_callback_t subChainAddress; 
 } iotextypes_StopSubChain;
 
+typedef struct _iotextypes_CandidateRegister { 
+    bool has_candidate;
+    iotextypes_CandidateBasicInfo candidate; 
+    pb_callback_t stakedAmount; 
+    uint32_t stakedDuration; 
+    bool autoStake; 
+    pb_callback_t ownerAddress; /* if ownerAddress is absent, owner of candidate is the sender */
+    pb_callback_t payload; 
+} iotextypes_CandidateRegister;
+
 typedef struct _iotextypes_ActionCore { 
     uint32_t version; 
     uint64_t nonce; 
     uint64_t gasLimit; 
-    pb_callback_t gasPrice; 
+    char gasPrice[40]; 
+    uint32_t chainID; 
+    pb_callback_t cb_action;
     pb_size_t which_action;
     union {
         iotextypes_Transfer transfer;
@@ -322,10 +331,15 @@ typedef struct _iotextypes_Action {
     iotextypes_ActionCore core; 
     pb_callback_t senderPubKey; 
     pb_callback_t signature; 
+    iotextypes_Encoding encoding; 
 } iotextypes_Action;
 
 
 /* Helper constants for enums */
+#define _iotextypes_Encoding_MIN iotextypes_Encoding_IOTEX_PROTOBUF
+#define _iotextypes_Encoding_MAX iotextypes_Encoding_ETHEREUM_RLP
+#define _iotextypes_Encoding_ARRAYSIZE ((iotextypes_Encoding)(iotextypes_Encoding_ETHEREUM_RLP+1))
+
 #define _iotextypes_RewardType_MIN iotextypes_RewardType_BlockReward
 #define _iotextypes_RewardType_MAX iotextypes_RewardType_EpochReward
 #define _iotextypes_RewardType_ARRAYSIZE ((iotextypes_RewardType)(iotextypes_RewardType_EpochReward+1))
@@ -347,7 +361,7 @@ extern "C" {
 #define iotextypes_StakeRestake_init_default     {0, 0, 0, {{NULL}, NULL}}
 #define iotextypes_StakeChangeCandidate_init_default {0, {{NULL}, NULL}, {{NULL}, NULL}}
 #define iotextypes_StakeTransferOwnership_init_default {0, {{NULL}, NULL}, {{NULL}, NULL}}
-#define iotextypes_CandidateBasicInfo_init_default {{{NULL}, NULL}, {{NULL}, NULL}, {{NULL}, NULL}}
+#define iotextypes_CandidateBasicInfo_init_default {"", "", ""}
 #define iotextypes_CandidateRegister_init_default {false, iotextypes_CandidateBasicInfo_init_default, {{NULL}, NULL}, 0, 0, {{NULL}, NULL}, {{NULL}, NULL}}
 #define iotextypes_StartSubChain_init_default    {0, {{NULL}, NULL}, {{NULL}, NULL}, 0, 0}
 #define iotextypes_StopSubChain_init_default     {0, 0, {{NULL}, NULL}}
@@ -366,10 +380,10 @@ extern "C" {
 #define iotextypes_PlumFinalizeExit_init_default {{{NULL}, NULL}, 0}
 #define iotextypes_PlumSettleDeposit_init_default {0}
 #define iotextypes_PlumTransfer_init_default     {0, {{NULL}, NULL}, {{NULL}, NULL}, {{NULL}, NULL}}
-#define iotextypes_ActionCore_init_default       {0, 0, 0, {{NULL}, NULL}, 0, {iotextypes_Transfer_init_default}}
-#define iotextypes_Action_init_default           {false, iotextypes_ActionCore_init_default, {{NULL}, NULL}, {{NULL}, NULL}}
-#define iotextypes_Receipt_init_default          {0, 0, {{NULL}, NULL}, 0, {{NULL}, NULL}, {{NULL}, NULL}}
-#define iotextypes_Log_init_default              {{{NULL}, NULL}, {{NULL}, NULL}, {{NULL}, NULL}, 0, {{NULL}, NULL}, 0}
+#define iotextypes_ActionCore_init_default       {0, 0, 0, "", 0, {{NULL}, NULL}, 0, {iotextypes_Transfer_init_default}}
+#define iotextypes_Action_init_default           {false, iotextypes_ActionCore_init_default, {{NULL}, NULL}, {{NULL}, NULL}, _iotextypes_Encoding_MIN}
+#define iotextypes_Receipt_init_default          {0, 0, {{NULL}, NULL}, 0, {{NULL}, NULL}, {{NULL}, NULL}, {{NULL}, NULL}}
+#define iotextypes_Log_init_default              {{{NULL}, NULL}, {{NULL}, NULL}, {{NULL}, NULL}, 0, {{NULL}, NULL}, 0, {{NULL}, NULL}}
 #define iotextypes_Logs_init_default             {{{NULL}, NULL}}
 #define iotextypes_EvmTransfer_init_default      {{{NULL}, NULL}, {{NULL}, NULL}, {{NULL}, NULL}}
 #define iotextypes_EvmTransferList_init_default  {{{NULL}, NULL}}
@@ -389,7 +403,7 @@ extern "C" {
 #define iotextypes_StakeRestake_init_zero        {0, 0, 0, {{NULL}, NULL}}
 #define iotextypes_StakeChangeCandidate_init_zero {0, {{NULL}, NULL}, {{NULL}, NULL}}
 #define iotextypes_StakeTransferOwnership_init_zero {0, {{NULL}, NULL}, {{NULL}, NULL}}
-#define iotextypes_CandidateBasicInfo_init_zero  {{{NULL}, NULL}, {{NULL}, NULL}, {{NULL}, NULL}}
+#define iotextypes_CandidateBasicInfo_init_zero  {"", "", ""}
 #define iotextypes_CandidateRegister_init_zero   {false, iotextypes_CandidateBasicInfo_init_zero, {{NULL}, NULL}, 0, 0, {{NULL}, NULL}, {{NULL}, NULL}}
 #define iotextypes_StartSubChain_init_zero       {0, {{NULL}, NULL}, {{NULL}, NULL}, 0, 0}
 #define iotextypes_StopSubChain_init_zero        {0, 0, {{NULL}, NULL}}
@@ -408,10 +422,10 @@ extern "C" {
 #define iotextypes_PlumFinalizeExit_init_zero    {{{NULL}, NULL}, 0}
 #define iotextypes_PlumSettleDeposit_init_zero   {0}
 #define iotextypes_PlumTransfer_init_zero        {0, {{NULL}, NULL}, {{NULL}, NULL}, {{NULL}, NULL}}
-#define iotextypes_ActionCore_init_zero          {0, 0, 0, {{NULL}, NULL}, 0, {iotextypes_Transfer_init_zero}}
-#define iotextypes_Action_init_zero              {false, iotextypes_ActionCore_init_zero, {{NULL}, NULL}, {{NULL}, NULL}}
-#define iotextypes_Receipt_init_zero             {0, 0, {{NULL}, NULL}, 0, {{NULL}, NULL}, {{NULL}, NULL}}
-#define iotextypes_Log_init_zero                 {{{NULL}, NULL}, {{NULL}, NULL}, {{NULL}, NULL}, 0, {{NULL}, NULL}, 0}
+#define iotextypes_ActionCore_init_zero          {0, 0, 0, "", 0, {{NULL}, NULL}, 0, {iotextypes_Transfer_init_zero}}
+#define iotextypes_Action_init_zero              {false, iotextypes_ActionCore_init_zero, {{NULL}, NULL}, {{NULL}, NULL}, _iotextypes_Encoding_MIN}
+#define iotextypes_Receipt_init_zero             {0, 0, {{NULL}, NULL}, 0, {{NULL}, NULL}, {{NULL}, NULL}, {{NULL}, NULL}}
+#define iotextypes_Log_init_zero                 {{{NULL}, NULL}, {{NULL}, NULL}, {{NULL}, NULL}, 0, {{NULL}, NULL}, 0, {{NULL}, NULL}}
 #define iotextypes_Logs_init_zero                {{{NULL}, NULL}}
 #define iotextypes_EvmTransfer_init_zero         {{{NULL}, NULL}, {{NULL}, NULL}, {{NULL}, NULL}}
 #define iotextypes_EvmTransferList_init_zero     {{{NULL}, NULL}}
@@ -426,9 +440,6 @@ extern "C" {
 #define iotextypes_Candidate_votes_tag           2
 #define iotextypes_Candidate_pubKey_tag          3
 #define iotextypes_Candidate_rewardAddress_tag   4
-#define iotextypes_CandidateBasicInfo_name_tag   1
-#define iotextypes_CandidateBasicInfo_operatorAddress_tag 2
-#define iotextypes_CandidateBasicInfo_rewardAddress_tag 3
 #define iotextypes_CandidateList_candidates_tag  1
 #define iotextypes_ClaimFromRewardingFund_amount_tag 1
 #define iotextypes_ClaimFromRewardingFund_data_tag 2
@@ -459,12 +470,9 @@ extern "C" {
 #define iotextypes_BlockEvmTransfer_blockHeight_tag 1
 #define iotextypes_BlockEvmTransfer_numEvmTransfers_tag 2
 #define iotextypes_BlockEvmTransfer_actionEvmTransfers_tag 3
-#define iotextypes_CandidateRegister_candidate_tag 1
-#define iotextypes_CandidateRegister_stakedAmount_tag 2
-#define iotextypes_CandidateRegister_stakedDuration_tag 3
-#define iotextypes_CandidateRegister_autoStake_tag 4
-#define iotextypes_CandidateRegister_ownerAddress_tag 5
-#define iotextypes_CandidateRegister_payload_tag 6
+#define iotextypes_CandidateBasicInfo_name_tag   1
+#define iotextypes_CandidateBasicInfo_operatorAddress_tag 2
+#define iotextypes_CandidateBasicInfo_rewardAddress_tag 3
 #define iotextypes_CreateDeposit_chainID_tag     1
 #define iotextypes_CreateDeposit_amount_tag      2
 #define iotextypes_CreateDeposit_recipient_tag   3
@@ -476,6 +484,7 @@ extern "C" {
 #define iotextypes_Log_blkHeight_tag             4
 #define iotextypes_Log_actHash_tag               5
 #define iotextypes_Log_index_tag                 6
+#define iotextypes_Log_blkHash_tag               7
 #define iotextypes_PlumChallengeExit_subChainAddress_tag 1
 #define iotextypes_PlumChallengeExit_coinID_tag  2
 #define iotextypes_PlumChallengeExit_challengeTransfer_tag 3
@@ -515,6 +524,7 @@ extern "C" {
 #define iotextypes_Receipt_gasConsumed_tag       4
 #define iotextypes_Receipt_contractAddress_tag   5
 #define iotextypes_Receipt_logs_tag              6
+#define iotextypes_Receipt_executionRevertMsg_tag 7
 #define iotextypes_SettleDeposit_amount_tag      1
 #define iotextypes_SettleDeposit_recipient_tag   2
 #define iotextypes_SettleDeposit_index_tag       3
@@ -546,10 +556,17 @@ extern "C" {
 #define iotextypes_StopSubChain_chainID_tag      1
 #define iotextypes_StopSubChain_stopHeight_tag   2
 #define iotextypes_StopSubChain_subChainAddress_tag 3
+#define iotextypes_CandidateRegister_candidate_tag 1
+#define iotextypes_CandidateRegister_stakedAmount_tag 2
+#define iotextypes_CandidateRegister_stakedDuration_tag 3
+#define iotextypes_CandidateRegister_autoStake_tag 4
+#define iotextypes_CandidateRegister_ownerAddress_tag 5
+#define iotextypes_CandidateRegister_payload_tag 6
 #define iotextypes_ActionCore_version_tag        1
 #define iotextypes_ActionCore_nonce_tag          2
 #define iotextypes_ActionCore_gasLimit_tag       3
 #define iotextypes_ActionCore_gasPrice_tag       4
+#define iotextypes_ActionCore_chainID_tag        5
 #define iotextypes_ActionCore_transfer_tag       10
 #define iotextypes_ActionCore_execution_tag      12
 #define iotextypes_ActionCore_startSubChain_tag  13
@@ -583,6 +600,7 @@ extern "C" {
 #define iotextypes_Action_core_tag               1
 #define iotextypes_Action_senderPubKey_tag       2
 #define iotextypes_Action_signature_tag          3
+#define iotextypes_Action_encoding_tag           4
 
 /* Struct field encoding specification for nanopb */
 #define iotextypes_Transfer_FIELDLIST(X, a) \
@@ -665,10 +683,10 @@ X(a, CALLBACK, SINGULAR, BYTES,    payload,           3)
 #define iotextypes_StakeTransferOwnership_DEFAULT NULL
 
 #define iotextypes_CandidateBasicInfo_FIELDLIST(X, a) \
-X(a, CALLBACK, SINGULAR, STRING,   name,              1) \
-X(a, CALLBACK, SINGULAR, STRING,   operatorAddress,   2) \
-X(a, CALLBACK, SINGULAR, STRING,   rewardAddress,     3)
-#define iotextypes_CandidateBasicInfo_CALLBACK pb_default_field_callback
+X(a, STATIC,   SINGULAR, STRING,   name,              1) \
+X(a, STATIC,   SINGULAR, STRING,   operatorAddress,   2) \
+X(a, STATIC,   SINGULAR, STRING,   rewardAddress,     3)
+#define iotextypes_CandidateBasicInfo_CALLBACK NULL
 #define iotextypes_CandidateBasicInfo_DEFAULT NULL
 
 #define iotextypes_CandidateRegister_FIELDLIST(X, a) \
@@ -810,38 +828,39 @@ X(a, CALLBACK, SINGULAR, STRING,   recipient,         4)
 X(a, STATIC,   SINGULAR, UINT32,   version,           1) \
 X(a, STATIC,   SINGULAR, UINT64,   nonce,             2) \
 X(a, STATIC,   SINGULAR, UINT64,   gasLimit,          3) \
-X(a, CALLBACK, SINGULAR, STRING,   gasPrice,          4) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (action,transfer,action.transfer),  10) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (action,execution,action.execution),  12) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (action,startSubChain,action.startSubChain),  13) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (action,stopSubChain,action.stopSubChain),  14) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (action,putBlock,action.putBlock),  15) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (action,createDeposit,action.createDeposit),  16) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (action,settleDeposit,action.settleDeposit),  17) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (action,createPlumChain,action.createPlumChain),  18) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (action,terminatePlumChain,action.terminatePlumChain),  19) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (action,plumPutBlock,action.plumPutBlock),  20) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (action,plumCreateDeposit,action.plumCreateDeposit),  21) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (action,plumStartExit,action.plumStartExit),  22) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (action,plumChallengeExit,action.plumChallengeExit),  23) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (action,plumResponseChallengeExit,action.plumResponseChallengeExit),  24) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (action,plumFinalizeExit,action.plumFinalizeExit),  25) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (action,plumSettleDeposit,action.plumSettleDeposit),  26) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (action,plumTransfer,action.plumTransfer),  27) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (action,depositToRewardingFund,action.depositToRewardingFund),  30) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (action,claimFromRewardingFund,action.claimFromRewardingFund),  31) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (action,grantReward,action.grantReward),  32) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (action,stakeCreate,action.stakeCreate),  40) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (action,stakeUnstake,action.stakeUnstake),  41) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (action,stakeWithdraw,action.stakeWithdraw),  42) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (action,stakeAddDeposit,action.stakeAddDeposit),  43) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (action,stakeRestake,action.stakeRestake),  44) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (action,stakeChangeCandidate,action.stakeChangeCandidate),  45) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (action,stakeTransferOwnership,action.stakeTransferOwnership),  46) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (action,candidateRegister,action.candidateRegister),  47) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (action,candidateUpdate,action.candidateUpdate),  48) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (action,putPollResult,action.putPollResult),  50)
-#define iotextypes_ActionCore_CALLBACK pb_default_field_callback
+X(a, STATIC,   SINGULAR, STRING,   gasPrice,          4) \
+X(a, STATIC,   SINGULAR, UINT32,   chainID,           5) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (action,transfer,action.transfer),  10) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (action,execution,action.execution),  12) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (action,startSubChain,action.startSubChain),  13) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (action,stopSubChain,action.stopSubChain),  14) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (action,putBlock,action.putBlock),  15) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (action,createDeposit,action.createDeposit),  16) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (action,settleDeposit,action.settleDeposit),  17) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (action,createPlumChain,action.createPlumChain),  18) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (action,terminatePlumChain,action.terminatePlumChain),  19) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (action,plumPutBlock,action.plumPutBlock),  20) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (action,plumCreateDeposit,action.plumCreateDeposit),  21) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (action,plumStartExit,action.plumStartExit),  22) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (action,plumChallengeExit,action.plumChallengeExit),  23) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (action,plumResponseChallengeExit,action.plumResponseChallengeExit),  24) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (action,plumFinalizeExit,action.plumFinalizeExit),  25) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (action,plumSettleDeposit,action.plumSettleDeposit),  26) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (action,plumTransfer,action.plumTransfer),  27) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (action,depositToRewardingFund,action.depositToRewardingFund),  30) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (action,claimFromRewardingFund,action.claimFromRewardingFund),  31) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (action,grantReward,action.grantReward),  32) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (action,stakeCreate,action.stakeCreate),  40) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (action,stakeUnstake,action.stakeUnstake),  41) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (action,stakeWithdraw,action.stakeWithdraw),  42) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (action,stakeAddDeposit,action.stakeAddDeposit),  43) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (action,stakeRestake,action.stakeRestake),  44) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (action,stakeChangeCandidate,action.stakeChangeCandidate),  45) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (action,stakeTransferOwnership,action.stakeTransferOwnership),  46) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (action,candidateRegister,action.candidateRegister),  47) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (action,candidateUpdate,action.candidateUpdate),  48) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (action,putPollResult,action.putPollResult),  50)
+#define iotextypes_ActionCore_CALLBACK NULL
 #define iotextypes_ActionCore_DEFAULT NULL
 #define iotextypes_ActionCore_action_transfer_MSGTYPE iotextypes_Transfer
 #define iotextypes_ActionCore_action_execution_MSGTYPE iotextypes_Execution
@@ -877,7 +896,8 @@ X(a, STATIC,   ONEOF,    MESSAGE,  (action,putPollResult,action.putPollResult), 
 #define iotextypes_Action_FIELDLIST(X, a) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  core,              1) \
 X(a, CALLBACK, SINGULAR, BYTES,    senderPubKey,      2) \
-X(a, CALLBACK, SINGULAR, BYTES,    signature,         3)
+X(a, CALLBACK, SINGULAR, BYTES,    signature,         3) \
+X(a, STATIC,   SINGULAR, UENUM,    encoding,          4)
 #define iotextypes_Action_CALLBACK pb_default_field_callback
 #define iotextypes_Action_DEFAULT NULL
 #define iotextypes_Action_core_MSGTYPE iotextypes_ActionCore
@@ -888,7 +908,8 @@ X(a, STATIC,   SINGULAR, UINT64,   blkHeight,         2) \
 X(a, CALLBACK, SINGULAR, BYTES,    actHash,           3) \
 X(a, STATIC,   SINGULAR, UINT64,   gasConsumed,       4) \
 X(a, CALLBACK, SINGULAR, STRING,   contractAddress,   5) \
-X(a, CALLBACK, REPEATED, MESSAGE,  logs,              6)
+X(a, CALLBACK, REPEATED, MESSAGE,  logs,              6) \
+X(a, CALLBACK, SINGULAR, STRING,   executionRevertMsg,   7)
 #define iotextypes_Receipt_CALLBACK pb_default_field_callback
 #define iotextypes_Receipt_DEFAULT NULL
 #define iotextypes_Receipt_logs_MSGTYPE iotextypes_Log
@@ -899,7 +920,8 @@ X(a, CALLBACK, REPEATED, BYTES,    topics,            2) \
 X(a, CALLBACK, SINGULAR, BYTES,    data,              3) \
 X(a, STATIC,   SINGULAR, UINT64,   blkHeight,         4) \
 X(a, CALLBACK, SINGULAR, BYTES,    actHash,           5) \
-X(a, STATIC,   SINGULAR, UINT32,   index,             6)
+X(a, STATIC,   SINGULAR, UINT32,   index,             6) \
+X(a, CALLBACK, SINGULAR, BYTES,    blkHash,           7)
 #define iotextypes_Log_CALLBACK pb_default_field_callback
 #define iotextypes_Log_DEFAULT NULL
 
@@ -1055,7 +1077,6 @@ extern const pb_msgdesc_t iotextypes_GrantReward_msg;
 /* iotextypes_StakeRestake_size depends on runtime parameters */
 /* iotextypes_StakeChangeCandidate_size depends on runtime parameters */
 /* iotextypes_StakeTransferOwnership_size depends on runtime parameters */
-/* iotextypes_CandidateBasicInfo_size depends on runtime parameters */
 /* iotextypes_CandidateRegister_size depends on runtime parameters */
 /* iotextypes_StartSubChain_size depends on runtime parameters */
 /* iotextypes_StopSubChain_size depends on runtime parameters */
@@ -1083,6 +1104,7 @@ extern const pb_msgdesc_t iotextypes_GrantReward_msg;
 /* iotextypes_BlockEvmTransfer_size depends on runtime parameters */
 /* iotextypes_DepositToRewardingFund_size depends on runtime parameters */
 /* iotextypes_ClaimFromRewardingFund_size depends on runtime parameters */
+#define iotextypes_CandidateBasicInfo_size       129
 #define iotextypes_CreatePlumChain_size          0
 #define iotextypes_GrantReward_size              13
 #define iotextypes_PlumSettleDeposit_size        11

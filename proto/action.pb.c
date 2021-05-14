@@ -96,10 +96,10 @@ PB_BIND(iotextypes_PlumSettleDeposit, iotextypes_PlumSettleDeposit, AUTO)
 PB_BIND(iotextypes_PlumTransfer, iotextypes_PlumTransfer, AUTO)
 
 
-PB_BIND(iotextypes_ActionCore, iotextypes_ActionCore, AUTO)
+PB_BIND(iotextypes_ActionCore, iotextypes_ActionCore, 2)
 
 
-PB_BIND(iotextypes_Action, iotextypes_Action, AUTO)
+PB_BIND(iotextypes_Action, iotextypes_Action, 2)
 
 
 PB_BIND(iotextypes_Receipt, iotextypes_Receipt, AUTO)
@@ -130,6 +130,7 @@ PB_BIND(iotextypes_ClaimFromRewardingFund, iotextypes_ClaimFromRewardingFund, AU
 
 
 PB_BIND(iotextypes_GrantReward, iotextypes_GrantReward, AUTO)
+
 
 
 

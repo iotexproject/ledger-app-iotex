@@ -87,7 +87,7 @@ display_cache_t *tx_display_cache() {
     memset(display_cache.num_subpages, 0, NUM_REQUIRED_ROOT_PAGES);
     memset(display_cache.subroot_start_token, TX_TOKEN_NOT_FOUND, NUM_REQUIRED_ROOT_PAGES);
 
-    decode_pb(transaction_get_buffer(),transaction_get_buffer_length(),&totalpages,-1);
+    decode_pb(transaction_get_buffer(),transaction_get_buffer_length(), &totalpages, -1);
 
     display_cache.num_pages = totalpages;
     parsing_context.cache_valid = 1;

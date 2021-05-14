@@ -207,6 +207,7 @@ message ActionCore {
   uint64 nonce = 2;
   uint64 gasLimit = 3;
   string gasPrice = 4;
+  uint32 chainID = 5;
   oneof action {
     Transfer transfer = 10;
     Execution execution = 12;
@@ -249,10 +250,16 @@ message ActionCore {
   }
 }
 
+enum Encoding {
+  IOTEX_PROTOBUF = 0;
+  ETHEREUM_RLP = 1;
+}
+
 message Action {
   ActionCore core = 1;
   bytes senderPubKey = 2;
   bytes signature = 3;
+  Encoding encoding = 4;
 }
 
 message Receipt {
@@ -262,6 +269,7 @@ message Receipt {
   uint64 gasConsumed = 4;
   string contractAddress = 5;
   repeated Log logs = 6;
+  string executionRevertMsg = 7;
 }
 
 message Log {
@@ -271,6 +279,7 @@ message Log {
   uint64 blkHeight = 4;
   bytes actHash = 5;
   uint32 index = 6;
+  bytes blkHash = 7;
 }
 
 message Logs {
