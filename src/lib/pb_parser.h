@@ -17,33 +17,7 @@
 #pragma once
 
 #include "stdint.h"
-/* protocol buffer constants */
-#define PB_WIRETYPE_MASK    7       /* AND mask to get wire type bits */
-#define PB_WT_VI            0       /* wire type: varint */
-#define PB_WT_64            1       /* wire type: 64-bit */
-#define PB_WT_LD            2       /* wire type: length delimited */
-#define PB_WT_32            5       /* wire type: 32-bit */
-
-
-#define PB_GET_WTYPE(x) ((x) & PB_WIRETYPE_MASK)
-#define PB_GET_FIELD(x) (((x) >> 3) & 0x1fffffff)
-
-/* IoTeX protobuf fields for message action core */
-#define ACT_VERSION         1       /* version */
-#define ACT_NONCE           2       /* nonce */
-#define ACT_GASLIMIT        3       /* gasLimit */
-#define ACT_GASPRICE        4       /* gasprice */
-#define ACT_TRANSFER        10      /* transfer */
-#define ACT_EXECUTION       12      /* execution */
-#define ACT_STAKE_CREATE	40
-#define ACT_STAKE_UNSTAKE	41
-#define ACT_STAKE_WITHDRAW	42
-#define ACT_STAKE_ADD_DEPOSIT	43
-#define ACT_STAKE_RESTAKE	44
-#define ACT_STAKE_CHANGE_CDD	45
-#define ACT_STAKE_TX_OWNERSHIP	46
-#define ACT_STAKE_CDD_REGISTER	47
-#define ACT_STAKE_CDD_UPDATE	48
+#include "stdbool.h"
 
 /* Max payload bytes to display */
 #define MAX_PAYLOAD_DISPLAY 50
@@ -56,15 +30,26 @@ typedef struct {
 } parsing_context_t;
 
 typedef enum {
-    DECODE_E_OK,
-    DECODE_E_WTYPE,
-    DECODE_E_LENGTH,
-    DECODE_E_UNSUPPORT,
-    DECODE_E_ACT_FIELD,
-    DECODE_E_EMBMSG_LEN,
-    DECODE_E_FIELD_TYPE,
-    DECODE_E_FIELD_NUMBER,
-} decode_error_t;
+    String = 0x1200,
+    Bytes = 0x1300,
+    Iotx = 0x1400,
+    Varint = 0x2000,
+    Bool = 0x2100,
+} field_type_t;
 
-uint64_t decode_varint(const uint8_t *buf, uint8_t *skip_bytes, uint8_t max_len);
+typedef struct {
+    const char *key;
+    field_type_t type;
+    union {
+        uint64_t varint;
+        struct {
+            const char *buf;
+            size_t len;
+        } ld;
+    } data;
+} field_display_t;
+
+#define IS_FILED_TYPE_LD(x) ((x) & 0x1000)
+#define IS_FIELD_TYPE_VI(x) ((x) & 0x2000)
+
 int decode_pb(const uint8_t *pb_data, uint32_t len, uint32_t *totalfields, int queryid);

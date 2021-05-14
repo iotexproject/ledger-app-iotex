@@ -20,7 +20,7 @@
 #include "view_templates.h"
 #include "view_expl.h"
 
-#include "glyphs.h"
+#include "ux.h"
 #include "bagl.h"
 #include "zxmacros.h"
 
