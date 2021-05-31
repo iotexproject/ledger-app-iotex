@@ -38,14 +38,24 @@ typedef struct {
     int16_t out_val_len;            // ??
 } tx_query_t;
 
+typedef struct {
+    const uint8_t *buf;
+    size_t size;
+    const char *key;
+    field_type_t type;
+} tx_buffer_t;
+
 // used to reduce stack size usage in recursive calls
+#define TX_BUFFER_SIZE 4
 typedef struct {
     tx_query_t query;                       // ??
     int8_t item_index_current;                     // ??
     uint8_t max_level;
     uint8_t max_depth;
     char actiontype;
+    tx_buffer_t buffer[TX_BUFFER_SIZE];
 } tx_context_t;
+
 
 enum tx_actiontype {
 	ACTION_TX = 1,

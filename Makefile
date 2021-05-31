@@ -25,7 +25,7 @@ include $(BOLOS_SDK)/Makefile.defines
 APPNAME = "IoTeX"
 APPVERSION_M=0
 APPVERSION_N=1
-APPVERSION_P=8
+APPVERSION_P=9
 
 APP_LOAD_PARAMS += --appFlags 0x200 --delete $(COMMON_LOAD_PARAMS) --path "44'/304'"
 APP_LOAD_PARAMS += --tlvraw 9F:01
@@ -116,7 +116,7 @@ endif
 #########################
 
 CC := $(CLANGPATH)clang
-CFLAGS += -O3 -Os
+CFLAGS += -O3 -Os -Iextra/nanopb -Iproto
 
 AS := $(GCCPATH)arm-none-eabi-gcc
 AFLAGS +=
@@ -128,7 +128,7 @@ LDLIBS   += -lm -lgcc -lc
 ##########################
 include $(BOLOS_SDK)/Makefile.glyphs
 
-APP_SOURCE_PATH += src deps/ledger-zxlib/include deps/ledger-zxlib/src
+APP_SOURCE_PATH += src proto extra/nanopb deps/ledger-zxlib/include deps/ledger-zxlib/src
 SDK_SOURCE_PATH += lib_stusb lib_u2f lib_stusb_impl
 
 #SDK_SOURCE_PATH  += lib_blewbxx lib_blewbxx_impl
