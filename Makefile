@@ -116,7 +116,7 @@ endif
 #########################
 
 CC := $(CLANGPATH)clang
-CFLAGS += -O3 -Os -Iextra/nanopb -Iproto
+CFLAGS += -O3 -Os -Iextra/nanopb -Iproto -Wno-format
 
 AS := $(GCCPATH)arm-none-eabi-gcc
 AFLAGS +=

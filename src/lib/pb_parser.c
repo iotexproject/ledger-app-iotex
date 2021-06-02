@@ -45,7 +45,7 @@ char *u642str(uint64_t num, char *str, size_t max_len) {
     }
 
     while (num != 0) {
-        if (end - start < max_len - 1) {
+        if ((size_t) (end - start) < max_len - 1) {
             last = num % 10;
             *end = last + '0';
             num /= 10;

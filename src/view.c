@@ -144,6 +144,10 @@ const ux_flow_step_t *const ux_smsg_flow [] = {
 // Nano S
 ux_state_t ux;
 
+static void exit_app(unsigned int code) {
+    os_sched_exit(code);
+}
+
 const ux_menu_entry_t menu_transaction_info[] = {
         {NULL, view_tx_show, 0, NULL, "View transaction", NULL, 0, 0},
         {NULL, accept, 0, &C_icon_validate_14, "Sign", NULL, 60, 40},
@@ -159,7 +163,7 @@ const ux_menu_entry_t menu_main[] = {
 #endif
         {NULL, view_addr_choose_show, 0, NULL, "Show Address", NULL, 0, 0},
         {NULL, NULL, 0, NULL, "v"APPVERSION, NULL, 0, 0},
-        {NULL, os_sched_exit, 0, &C_icon_dashboard, "Quit app", NULL, 50, 29},
+        {NULL, exit_app, 0, &C_icon_dashboard, "Quit app", NULL, 50, 29},
         UX_MENU_END
 };
 
@@ -256,6 +260,8 @@ uint32_t bip32_field_add(uint32_t field, int16_t value) {
 }
 
 static unsigned int view_addr_choose_button(unsigned int button_mask, unsigned int button_mask_counter) {
+    UNUSED(button_mask_counter);
+
     switch (button_mask) {
         case BUTTON_EVT_RELEASED | BUTTON_LEFT | BUTTON_RIGHT:
             // Press both to accept / switch mode
@@ -364,6 +370,8 @@ void view_init(void) {
 }
 
 void view_idle(unsigned int ignored) {
+    UNUSED(ignored);
+
 #if defined(TARGET_NANOS)
     UX_MENU_DISPLAY(0, menu_main, NULL);
 #elif defined(TARGET_NANOX)
@@ -375,6 +383,8 @@ void view_idle(unsigned int ignored) {
 }
 
 void view_status(unsigned int ignored) {
+    UNUSED(ignored);
+
 #if defined(TARGET_NANOS)
     UX_MENU_DISPLAY(0, menu_status, NULL);
 #endif
@@ -429,6 +439,8 @@ void view_addr_choose_refresh() {
 }
 
 void view_addr_choose_show(unsigned int _) {
+    UNUSED(_);
+
     // Initialize show view
     view_addr_choose_data.status.mode = VIEW_ADDR_MODE_SHOW;
     view_addr_choose_data.account = 0;
@@ -443,6 +455,8 @@ void view_addr_choose_show(unsigned int _) {
 }
 
 void view_addr_confirm(unsigned int _) {
+    UNUSED(_);
+
     view_addr_choose_data.status.mode = VIEW_ADDR_MODE_CONFIRM;
     view_addr_choose_data.account = BIP32_ACCOUNT;
     view_addr_choose_data.index = BIP32_INDEX;

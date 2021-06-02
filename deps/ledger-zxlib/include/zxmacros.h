@@ -39,12 +39,17 @@ extern "C" {
 #include "bolos_target.h"
 #include "os.h"
 #include "cx.h"
+#include <string.h>
 
 #if defined(TARGET_NANOX)
 #include "ux.h"
 #else
 #include "os_io_seproxyhal.h"
 #endif
+
+#define MEMMOVE memmove
+#define MEMSET memset
+#define MEMCPY memcpy
 
 #define WAIT_EVENT() io_seproxyhal_spi_recv(G_io_seproxyhal_spi_buffer, sizeof(G_io_seproxyhal_spi_buffer), 0)
 
@@ -60,9 +65,6 @@ extern "C" {
 #define IS_UX_ALLOWED (ux.params.len != BOLOS_UX_IGNORE && ux.params.len != BOLOS_UX_CONTINUE)
 #endif
 
-#define MEMMOVE os_memmove
-#define MEMSET os_memset
-#define MEMCPY os_memcpy
 #define MEMCPY_NV nvm_write
 
 void debug_printf(void* buffer);
@@ -75,10 +77,6 @@ void __logstack();
 #define LOGSTACK() __logstack()
 
 #else
-#include <string.h>
-#define MEMMOVE memmove
-#define MEMSET memset
-#define MEMCPY memcpy
 #define MEMCPY_NV memcpy
 #define LOG(str)
 #define LOGSTACK()

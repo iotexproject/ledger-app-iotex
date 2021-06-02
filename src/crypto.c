@@ -64,7 +64,7 @@ int sign_secp256k1(const uint8_t *message,
             signature_capacity,
             &info);
 
-    os_memset(&privateKey, 0, sizeof(privateKey));
+    explicit_bzero(&privateKey, sizeof(privateKey));
 #ifdef TESTING_ENABLED
     int ret = cx_ecdsa_verify(
             &publicKey,
@@ -92,8 +92,8 @@ int sign_secp256k1(const uint8_t *message,
       v += 2;
     }
 
-    os_memmove(signature,signature + 4 + rOffset, 32);
-    os_memmove(signature + 32, signature + 4 + rLength + 2 + sOffset, 32);
+    memmove(signature, signature + 4 + rOffset, 32);
+    memmove(signature + 32, signature + 4 + rLength + 2 + sOffset, 32);
     signature[64] = v;
     *signature_length = 65;
 
