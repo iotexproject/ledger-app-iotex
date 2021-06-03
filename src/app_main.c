@@ -126,17 +126,15 @@ bool extractBip32(uint8_t *depth, uint32_t path[10], uint32_t rx, uint32_t offse
     return 1;
 }
 
-bool validateIoTexPath(uint8_t depth, uint32_t path[10]) {
-    UNUSED(depth);  // FIXME: depth should be used instead of bip32_depth
-
+static bool validateIoTexPath(uint8_t depth, uint32_t path[10]) {
     // Only paths in the form 44'/304'/{account}'/0/{index} are supported
-    if (bip32_depth != 5) {
-        return 0;
+    if (depth != 5) {
+        return false;
     }
     if (path[0] != 0x8000002c || path[1] != 0x80000130 || path[3] != 0) {
-        return 0;
+        return false;
     }
-    return 1;
+    return true;
 }
 
 bool extractHRP(uint8_t *len, char *hrp, uint32_t rx, uint32_t offset) {
