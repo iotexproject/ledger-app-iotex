@@ -107,7 +107,7 @@ int16_t tx_display_get_item(uint16_t page_index) {
     // TODO: Verify it has been properly set?
     tx_ctx.query.out_key[0] = 0;
     tx_ctx.query.out_val[0] = 0;
-    if (page_index < 0 || page_index >= display_cache.num_pages) {
+    if (page_index >= display_cache.num_pages) {
         return -1;
     }
 
