@@ -137,20 +137,23 @@ static bool validateIoTexPath(uint8_t depth, uint32_t path[10]) {
     return true;
 }
 
-bool extractHRP(uint8_t *len, char *hrp, uint32_t rx, uint32_t offset) {
+static bool extractHRP(uint8_t *len, char *hrp, size_t rx, size_t offset) {
     if (rx < offset + 1) {
-        THROW(APDU_CODE_DATA_INVALID);
+        return false;
     }
 
     *len = G_io_apdu_buffer[offset];
-
     if (*len == 0 || *len > MAX_BECH32_HRP_LEN) {
-        THROW(APDU_CODE_DATA_INVALID);
+        return false;
+    }
+
+    if (rx < offset + 1 + *len) {
+        return false;
     }
 
     memcpy(hrp, G_io_apdu_buffer + offset + 1, *len);
     hrp[*len] = 0; // zero terminate
-    return 1;
+    return true;
 }
 
 bool process_chunk(volatile uint32_t *tx, uint32_t rx, bool getBip32) {
