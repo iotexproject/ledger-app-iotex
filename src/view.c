@@ -50,12 +50,12 @@ viewctl_delegate_reject ehReject = NULL;
 #define UIID_MARKER1    0x60
 #define UIID_MARKER2    0x61
 
-void accept(unsigned int _) {
+void accept_operation(unsigned int _) {
     UNUSED(_);
     if (ehAccept != NULL) ehAccept();
 }
 
-void reject(unsigned int _) {
+void reject_operation(unsigned int _) {
     UNUSED(_);
     if (ehReject != NULL) ehReject();
 }
@@ -108,8 +108,8 @@ const ux_flow_step_t *const ux_idle_flow [] = {
 };
 
 UX_FLOW_DEF_VALID(ux_tx_flow_1_step, pbb, view_tx_show(0), { &C_icon_eye, "Review", "Transaction" });
-UX_FLOW_DEF_VALID(ux_tx_flow_2_step, pbb, accept(0), { &C_icon_validate_14, "Sign", "Transaction" });
-UX_FLOW_DEF_VALID(ux_tx_flow_3_step, pbb, reject(0), { &C_icon_crossmark, "Reject", "Transaction" });
+UX_FLOW_DEF_VALID(ux_tx_flow_2_step, pbb, accept_operation(0), { &C_icon_validate_14, "Sign", "Transaction" });
+UX_FLOW_DEF_VALID(ux_tx_flow_3_step, pbb, reject_operation(0), { &C_icon_crossmark, "Reject", "Transaction" });
 const ux_flow_step_t *const ux_tx_flow [] = {
   &ux_tx_flow_1_step,
   &ux_tx_flow_2_step,
@@ -119,8 +119,8 @@ const ux_flow_step_t *const ux_tx_flow [] = {
 
 UX_FLOW_DEF_NOCB(ux_addr_flow_1_step, bnn, { "Address Request", viewctl.title, viewctl.dataKey});
 UX_FLOW_DEF_NOCB(ux_addr_flow_2_step, bnnn_paging, { .title = "Address", .text = viewctl.dataValue });
-UX_FLOW_DEF_VALID(ux_addr_flow_3_step, pb, accept(0), { &C_icon_validate_14, "Reply", });
-UX_FLOW_DEF_VALID(ux_addr_flow_4_step, pb, reject(0), { &C_icon_crossmark, "Reject", });
+UX_FLOW_DEF_VALID(ux_addr_flow_3_step, pb, accept_operation(0), { &C_icon_validate_14, "Reply", });
+UX_FLOW_DEF_VALID(ux_addr_flow_4_step, pb, reject_operation(0), { &C_icon_crossmark, "Reject", });
 const ux_flow_step_t *const ux_addr_flow [] = {
   &ux_addr_flow_1_step,
   &ux_addr_flow_2_step,
@@ -130,8 +130,8 @@ const ux_flow_step_t *const ux_addr_flow [] = {
 };
 
 UX_FLOW_DEF_VALID(ux_smsg_flow_1_step, pbb, view_smsg_show(0), { &C_icon_eye, "Review", "Sign Message" });
-UX_FLOW_DEF_VALID(ux_smsg_flow_2_step, pbb, accept(0), { &C_icon_validate_14, "Sign", "Sign Message" });
-UX_FLOW_DEF_VALID(ux_smsg_flow_3_step, pbb, reject(0), { &C_icon_crossmark, "Reject", "Sign Message" });
+UX_FLOW_DEF_VALID(ux_smsg_flow_2_step, pbb, accept_operation(0), { &C_icon_validate_14, "Sign", "Sign Message" });
+UX_FLOW_DEF_VALID(ux_smsg_flow_3_step, pbb, reject_operation(0), { &C_icon_crossmark, "Reject", "Sign Message" });
 const ux_flow_step_t *const ux_smsg_flow [] = {
   &ux_smsg_flow_1_step,
   &ux_smsg_flow_2_step,
@@ -150,8 +150,8 @@ static void exit_app(unsigned int code) {
 
 const ux_menu_entry_t menu_transaction_info[] = {
         {NULL, view_tx_show, 0, NULL, "View transaction", NULL, 0, 0},
-        {NULL, accept, 0, &C_icon_validate_14, "Sign", NULL, 60, 40},
-        {NULL, reject, 0, &C_icon_crossmark, "Reject", NULL, 60, 40},
+        {NULL, accept_operation, 0, &C_icon_validate_14, "Sign", NULL, 60, 40},
+        {NULL, reject_operation, 0, &C_icon_crossmark, "Reject", NULL, 60, 40},
         UX_MENU_END
 };
 
@@ -174,8 +174,8 @@ const ux_menu_entry_t menu_status[] = {
 
 const ux_menu_entry_t menu_sign_msg[] = {
         {NULL, view_smsg_show, 0, NULL, "Sign Message", NULL, 0, 0},
-        {NULL, accept, 0, &C_icon_validate_14, "Sign", NULL, 60, 40},
-        {NULL, reject, 0, &C_icon_crossmark, "Reject", NULL, 60, 40},
+        {NULL, accept_operation, 0, &C_icon_validate_14, "Sign", NULL, 60, 40},
+        {NULL, reject_operation, 0, &C_icon_crossmark, "Reject", NULL, 60, 40},
         UX_MENU_END
 };
 
@@ -293,7 +293,7 @@ static unsigned int view_addr_choose_button(unsigned int button_mask, unsigned i
 #endif
                     return 0;
                 case VIEW_ADDR_MODE_CONFIRM:
-                    reject(0);
+                    reject_operation(0);
                     return 0;
                 default:
                     return 0;
@@ -313,7 +313,7 @@ static unsigned int view_addr_choose_button(unsigned int button_mask, unsigned i
                     show_idle_menu();
                     return 0;
                 case VIEW_ADDR_MODE_CONFIRM:
-                    accept(0);
+                    accept_operation(0);
                     return 0;
                 default:
                     return 0;
