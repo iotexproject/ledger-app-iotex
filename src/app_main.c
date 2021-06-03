@@ -339,15 +339,16 @@ int16_t smsg_getData(char *title, int16_t max_title_length,
     const uint32_t max_display_length = 128;
     const uint32_t last_page_length = (transaction_get_buffer_length() * 2) % max_display_length;
 
+    int16_t page_count = (transaction_get_buffer_length() * 2) / max_display_length + (last_page_length != 0);
     if (page_count_out) {
-        *page_count_out = (transaction_get_buffer_length() * 2) / max_display_length + (last_page_length != 0);
+        *page_count_out = page_count;
     }
 
     if (chunk_count_out) {
         *chunk_count_out = 1;
     }
 
-    if (page_index + 1 != *page_count_out) {
+    if (page_index + 1 != page_count) {
         length = max_display_length;
     }
     else {
@@ -355,7 +356,7 @@ int16_t smsg_getData(char *title, int16_t max_title_length,
     }
 
     length = length ? length : max_display_length;
-    snprintf(title, max_title_length, "Raw Message %02d/%02d", page_index + 1, *page_count_out);
+    snprintf(title, max_title_length, "Raw Message %02d/%02d", page_index + 1, page_count);
     snprintf(key, max_key_length, "Length: %d", transaction_get_buffer_length());
     snprintf(value, max_value_length, "%.*H", length / 2, transaction_get_buffer() + page_index * max_display_length / 2);
   
