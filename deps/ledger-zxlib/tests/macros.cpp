@@ -30,52 +30,6 @@ TEST(MACROS, array_to_hexstr) {
 }
 
 namespace {
-TEST(MACROS, fpuint64_to_str) {
-    char output[100];
-    printf("\n");
-
-    fpuint64_to_str(output, 123, 5);
-    printf("%10s\n", output);
-    EXPECT_EQ(std::string(output), "0.00123");
-
-    fpuint64_to_str(output, 1234, 5);
-    printf("%10s\n", output);
-    EXPECT_EQ(std::string(output), "0.01234");
-
-    fpuint64_to_str(output, 12345, 5);
-    printf("%10s\n", output);
-    EXPECT_EQ(std::string(output), "0.12345");
-
-    fpuint64_to_str(output, 123456, 5);
-    printf("%10s\n", output);
-    EXPECT_EQ(std::string(output), "1.23456");
-
-    fpuint64_to_str(output, 1234567, 5);
-    printf("%10s\n", output);
-    EXPECT_EQ(std::string(output), "12.34567");
-}
-
-    TEST(MACROS, fpuint64_to_str_zeros) {
-        char output[100];
-        printf("\n");
-
-        fpuint64_to_str(output, 0, 9);
-        printf("%11s\n", output);
-        EXPECT_EQ(std::string(output), "0.000000000");
-
-        fpuint64_to_str(output, 0, 1);
-        printf("%11s\n", output);
-        EXPECT_EQ(std::string(output), "0.0");
-
-        fpuint64_to_str(output, 1, 1);
-        printf("%11s\n", output);
-        EXPECT_EQ(std::string(output), "0.1");
-
-        fpuint64_to_str(output, 10, 1);
-        printf("%11s\n", output);
-        EXPECT_EQ(std::string(output), "1.0");
-    }
-
 TEST(INT64_TO_STR, Zero) {
 
     char temp[10];
