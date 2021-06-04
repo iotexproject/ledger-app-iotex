@@ -237,7 +237,7 @@ void tx_accept_sign() {
                                        bip32_path, bip32_depth,
                                        privateKeyData, NULL);
             keys_secp256k1(&publicKey, &privateKey, privateKeyData);
-            memset(privateKeyData, 0, 32);
+            explicit_bzero(privateKeyData, sizeof(privateKeyData));
             result = sign_secp256k1(transaction_get_buffer(),
                                     transaction_get_buffer_length(),
                                     G_io_apdu_buffer,
@@ -408,7 +408,7 @@ static uint32_t num2str(uint32_t num, char *str, size_t max_len) {
 void smsg_accept() {
     int result;
     uint32_t length;
-    uint8_t sign_msg[280];
+    uint8_t sign_msg[280] = {0};
     uint8_t private_key_data[32];
     const uint32_t sign_magic_length = strlen(SIGN_MAGIC);
   
@@ -416,7 +416,6 @@ void smsg_accept() {
     cx_ecfp_private_key_t private_key;
 
     /* Copy sign magic to sign message */
-    memset(sign_msg, 0, sizeof(sign_msg));
     memcpy(sign_msg, SIGN_MAGIC, sign_magic_length);
 
     /* Append byte length and byte to sign msg */
@@ -431,7 +430,7 @@ void smsg_accept() {
                                private_key_data, NULL);
 
     keys_secp256k1(&public_key, &private_key, private_key_data);
-    memset(private_key_data, 0, sizeof(private_key_data));
+    explicit_bzero(private_key_data, sizeof(private_key_data));
 
     result = sign_secp256k1(sign_msg,
                             sign_magic_length + length + transaction_get_buffer_length(),

@@ -111,8 +111,8 @@ void getPubKey(cx_ecfp_public_key_t *publicKey) {
                                privateKeyData, NULL);
 
     keys_secp256k1(publicKey, &privateKey, privateKeyData);
-    memset(privateKeyData, 0, sizeof(privateKeyData));
-    memset(&privateKey, 0, sizeof(privateKey));
+    explicit_bzero(privateKeyData, sizeof(privateKeyData));
+    explicit_bzero(&privateKey, sizeof(privateKey));
 }
 
 void ripemd160_32(uint8_t *out, uint8_t *in) {
