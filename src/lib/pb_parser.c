@@ -23,7 +23,7 @@
 #include "pb_parser.h"
 #include "tx_parser.h"
 
-#include "proto/action.pb.h"
+#include "action.pb.h"
 
 #define min(a,b) \
    ({ __typeof__ (a) _a = (a); \

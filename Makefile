@@ -113,7 +113,7 @@ endif
 #########################
 
 CC := $(CLANGPATH)clang
-CFLAGS += -O3 -Os -I. -Wno-format
+CFLAGS += -O3 -Os -I. -Iproto -Wno-format
 
 AS := $(GCCPATH)arm-none-eabi-gcc
 AFLAGS +=
