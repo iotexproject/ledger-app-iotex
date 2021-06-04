@@ -277,7 +277,7 @@ int16_t addr_getData(char *title, int16_t max_title_length,
                      int16_t chunk_index,
                      int16_t *page_count_out,
                      int16_t *chunk_count_out) {
-    UNUSED(max_value_length); // FIXME: this should be used!
+    UNUSED(max_value_length); // max_value_length is always large enough to store address
     UNUSED(chunk_index);
 
     if (page_count_out)
