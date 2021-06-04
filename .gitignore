@@ -34,6 +34,9 @@
 # OS related files
 .DS_Store
 
+# Protobuf generated files
+*.pb.[ch]
+
 # Others
 cmake-build-debug/
 \.idea/workspace\.xml
