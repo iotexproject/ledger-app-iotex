@@ -136,8 +136,12 @@ void get_bech32_addr(char *bech32_addr) {
 
     getPubKey(&publicKey);
     cx_keccak_init(&sha3, HASH_KECCAK_BYTES * 8);
-    cx_hash((cx_hash_t *)&sha3, CX_LAST, &(publicKey.W[1]), publicKey.W_len-1, key_digest,HASH_KECCAK_BYTES);
+    cx_hash((cx_hash_t *)&sha3, CX_LAST, &(publicKey.W[1]), publicKey.W_len-1, key_digest, HASH_KECCAK_BYTES);
 
     // Encode the last 20 bytes([12:32] bytes in the 32 bytes hash value)as address
     bech32EncodeFromBytes(bech32_addr, bech32_hrp, &(key_digest[12]), 20);
+}
+
+void encode_bech32_addr(char *bech32_addr, const uint8_t *input) {
+    bech32EncodeFromBytes(bech32_addr, bech32_hrp, &(input[12]), 20);
 }

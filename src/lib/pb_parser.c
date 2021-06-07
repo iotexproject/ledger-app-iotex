@@ -21,8 +21,10 @@
 #include "../../extra/nanopb/pb.h"
 #include "../../extra/nanopb/pb_encode.h"
 #include "../../extra/nanopb/pb_decode.h"
+#include "../crypto.h"
 #include "pb_parser.h"
 #include "tx_parser.h"
+#include "biginteger.h"
 
 #include "../../proto/action.pb.h"
 
@@ -32,43 +34,9 @@
       _a < _b ? _a : _b; })
 
 #define PAYLOAD_STR "Payload"
-
-char *u642str(uint64_t num, char *str, size_t max_len) {
-    char temp;
-    int last = 0;
-    char *start = str, *end = str;
-
-    if (0 == num) {
-        str[0] = '0';
-        str[1] = 0;
-        return str;
-    }
-
-    while (num != 0) {
-        if (end - start < max_len - 1) {
-            last = num % 10;
-            *end = last + '0';
-            num /= 10;
-            end++;
-        }
-        else {
-            /* buffer too short */
-            return NULL;
-        }
-    }
-
-    /* string ends with \0 */
-    *end = 0;
-
-    while (start < --end) {
-        temp = *start;
-        *start = *end;
-        *end = temp;
-        start++;
-    }
-
-    return str;
-}
+#define VITA_RECIPIENT_ADDR_LEN BIGINT_U256_BYTES
+#define VITA_AMOUNT_BIG_INTEGER_LEN BIGINT_U256_BYTES
+static const uint8_t executionTransferSignature[] = {0xa9, 0x05, 0x9c, 0xbb};
 
 /* Transform rau to iotx: 1 iotx = 10**18 rau */
 const char *utils_rau2iotx(const char *rau, size_t rau_len, char *iotx, size_t max) {
@@ -133,6 +101,8 @@ const char *utils_rau2iotx(const char *rau, size_t rau_len, char *iotx, size_t m
 
 static void display_ld_item(const uint8_t *pb_data, int ld_len, const char *name, field_type_t type) {
     int offset = 0;
+    bigint_uint256 vita_amount = {{0, 0}, {0, 0}};
+    char vita_amount_str[BIGINT_U256_MAX_DD + 1] = {0};
     int cpylen = min(ld_len, tx_ctx.query.out_val_len - 1);
     snprintf(tx_ctx.query.out_key, tx_ctx.query.out_key_len, "%s", name);
 
@@ -163,6 +133,19 @@ static void display_ld_item(const uint8_t *pb_data, int ld_len, const char *name
             utils_rau2iotx((const char *)pb_data, cpylen, tx_ctx.query.out_val, tx_ctx.query.out_val_len);
             break;
 
+        case Vita:
+            /* Bytes ==> big-integer 256 ==> vita string ==> rau */
+            bigint_bytes2uint256(pb_data, ld_len, &vita_amount, true);
+            bigint_u2562str(vita_amount, vita_amount_str, sizeof(vita_amount_str));
+
+            snprintf(tx_ctx.query.out_val, tx_ctx.query.out_val_len, "%s", vita_amount_str);
+            utils_rau2iotx(vita_amount_str, strlen(vita_amount_str), tx_ctx.query.out_val, tx_ctx.query.out_val_len);
+            break;
+
+        case Addr:
+            encode_bech32_addr(tx_ctx.query.out_val, pb_data);
+            break;
+
         default:
             break;
     }
@@ -175,7 +158,7 @@ static void display_vi_item(uint64_t number, const char *name, field_type_t type
         snprintf(tx_ctx.query.out_val, tx_ctx.query.out_val_len, number ? "true" : "false");
     }
     else {
-        u642str(number, tx_ctx.query.out_val, tx_ctx.query.out_val_len);
+        bigint_u642str(number, tx_ctx.query.out_val, tx_ctx.query.out_val_len);
     }
 }
 
@@ -231,7 +214,7 @@ static uint32_t display_ld_msg(pb_istream_t *stream, int totalfields, int queryi
 
 static bool read_bytes(pb_istream_t *stream, const pb_field_iter_t *field, void **arg) {
     PB_UNUSED(field);
-    int idx =  (intptr_t) *arg;
+    int idx =  (intptr_t) * arg;
 
     if (stream->bytes_left && idx < TX_BUFFER_SIZE) {
         tx_ctx.buffer[idx].buf = stream->state;
@@ -428,9 +411,51 @@ static uint32_t display_transfer(pb_istream_t *stream, const iotextypes_Transfer
     return display_ld_msg(stream, 0, queryid, 0, 3);
 }
 
+static bool is_tx_vita(const tx_buffer_t *data) {
+    if (!data->buf || !data->size) {
+        return false;
+    }
+
+    if (data->size < sizeof(executionTransferSignature) + VITA_AMOUNT_BIG_INTEGER_LEN) {
+        return false;
+    }
+
+    return !memcmp(executionTransferSignature, data->buf, sizeof(executionTransferSignature));
+}
+
 static uint32_t display_execution(pb_istream_t *stream, const iotextypes_Execution *exe, int queryid) {
     PB_UNUSED(exe);
-    return display_ld_msg(stream, 0, queryid, 0, 3);
+    const tx_buffer_t *data = tx_ctx.buffer + 2;
+
+    if (is_tx_vita(data)) {
+        tx_ctx.actiontype = ACTION_TX;
+
+        /* Signature, recipient address, vita amount(256bit big integer)*/
+        tx_ctx.buffer[0].key = "Amount (VITA)";
+        tx_ctx.buffer[0].type = Vita;
+        tx_ctx.buffer[0].size = VITA_AMOUNT_BIG_INTEGER_LEN;
+        tx_ctx.buffer[0].buf = data->buf + data->size - VITA_AMOUNT_BIG_INTEGER_LEN;
+
+        /* Backup contract to buffer[3] */
+        tx_ctx.buffer[3].buf = tx_ctx.buffer[1].buf;
+        tx_ctx.buffer[3].size = tx_ctx.buffer[1].size;
+
+        tx_ctx.buffer[1].key = "Recipient";
+        tx_ctx.buffer[1].type = Addr;
+        tx_ctx.buffer[1].size = VITA_RECIPIENT_ADDR_LEN;
+        tx_ctx.buffer[1].buf = data->buf + sizeof(executionTransferSignature);
+
+        /* Restore contract from buffer[3] */
+        tx_ctx.buffer[2].key = "Contract";
+        tx_ctx.buffer[2].type = String;
+        tx_ctx.buffer[2].buf = tx_ctx.buffer[3].buf;
+        tx_ctx.buffer[2].size = tx_ctx.buffer[3].size;
+
+        return display_ld_msg(stream, 0, queryid, 0, 3);;
+    }
+    else {
+        return display_ld_msg(stream, 0, queryid, 0, 3);
+    }
 }
 
 static uint32_t display_stake_create(pb_istream_t *stream, const iotextypes_StakeCreate *create, int queryid) {
