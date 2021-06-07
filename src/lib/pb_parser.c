@@ -34,9 +34,10 @@
       _a < _b ? _a : _b; })
 
 #define PAYLOAD_STR "Payload"
-#define VITA_RECIPIENT_ADDR_LEN BIGINT_U256_BYTES
-#define VITA_AMOUNT_BIG_INTEGER_LEN BIGINT_U256_BYTES
 static const uint8_t executionTransferSignature[] = {0xa9, 0x05, 0x9c, 0xbb};
+#define XRC20_TX_RECIPIENT_ADDR_LEN BIGINT_U256_BYTES
+#define XRC20_TX_AMOUNT_BIG_INTEGER_LEN BIGINT_U256_BYTES
+#define XRC20_TX_DATA_LEN (sizeof(executionTransferSignature) + XRC20_TX_RECIPIENT_ADDR_LEN + XRC20_TX_AMOUNT_BIG_INTEGER_LEN)
 
 /* Transform rau to iotx: 1 iotx = 10**18 rau */
 const char *utils_rau2iotx(const char *rau, size_t rau_len, char *iotx, size_t max) {
@@ -133,16 +134,14 @@ static void display_ld_item(const uint8_t *pb_data, int ld_len, const char *name
             utils_rau2iotx((const char *)pb_data, cpylen, tx_ctx.query.out_val, tx_ctx.query.out_val_len);
             break;
 
-        case Vita:
-            /* Bytes ==> big-integer 256 ==> vita string ==> rau */
+        case XRC20Token:
+            /* Bytes ==> big-integer 256 ==> decimal string */
             bigint_bytes2uint256(pb_data, ld_len, &vita_amount, true);
             bigint_u2562str(vita_amount, vita_amount_str, sizeof(vita_amount_str));
-
             snprintf(tx_ctx.query.out_val, tx_ctx.query.out_val_len, "%s", vita_amount_str);
-            utils_rau2iotx(vita_amount_str, strlen(vita_amount_str), tx_ctx.query.out_val, tx_ctx.query.out_val_len);
             break;
 
-        case Addr:
+        case Bech32Addr:
             encode_bech32_addr(tx_ctx.query.out_val, pb_data);
             break;
 
@@ -416,7 +415,7 @@ static bool is_tx_vita(const tx_buffer_t *data) {
         return false;
     }
 
-    if (data->size < sizeof(executionTransferSignature) + VITA_AMOUNT_BIG_INTEGER_LEN) {
+    if (data->size != XRC20_TX_DATA_LEN) {
         return false;
     }
 
@@ -431,18 +430,18 @@ static uint32_t display_execution(pb_istream_t *stream, const iotextypes_Executi
         tx_ctx.actiontype = ACTION_TX;
 
         /* Signature, recipient address, vita amount(256bit big integer)*/
-        tx_ctx.buffer[0].key = "Amount (VITA)";
-        tx_ctx.buffer[0].type = Vita;
-        tx_ctx.buffer[0].size = VITA_AMOUNT_BIG_INTEGER_LEN;
-        tx_ctx.buffer[0].buf = data->buf + data->size - VITA_AMOUNT_BIG_INTEGER_LEN;
+        tx_ctx.buffer[0].key = "Amount";
+        tx_ctx.buffer[0].type = XRC20Token;
+        tx_ctx.buffer[0].size = XRC20_TX_AMOUNT_BIG_INTEGER_LEN;
+        tx_ctx.buffer[0].buf = data->buf + data->size - XRC20_TX_AMOUNT_BIG_INTEGER_LEN;
 
         /* Backup contract to buffer[3] */
         tx_ctx.buffer[3].buf = tx_ctx.buffer[1].buf;
         tx_ctx.buffer[3].size = tx_ctx.buffer[1].size;
 
         tx_ctx.buffer[1].key = "Recipient";
-        tx_ctx.buffer[1].type = Addr;
-        tx_ctx.buffer[1].size = VITA_RECIPIENT_ADDR_LEN;
+        tx_ctx.buffer[1].type = Bech32Addr;
+        tx_ctx.buffer[1].size = XRC20_TX_RECIPIENT_ADDR_LEN;
         tx_ctx.buffer[1].buf = data->buf + sizeof(executionTransferSignature);
 
         /* Restore contract from buffer[3] */
