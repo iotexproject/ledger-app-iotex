@@ -145,3 +145,7 @@ void get_bech32_addr(char *bech32_addr) {
 void encode_bech32_addr(char *bech32_addr, const uint8_t *input) {
     bech32EncodeFromBytes(bech32_addr, bech32_hrp, &(input[12]), 20);
 }
+
+void encode_bech32_addr20(char *bech32_addr, const uint8_t *input) {
+    bech32EncodeFromBytes(bech32_addr, bech32_hrp, input, 20);
+}
