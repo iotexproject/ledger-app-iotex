@@ -50,7 +50,7 @@ int buffering_append(uint8_t *data, int length) {
     if (ram.in_use) {
         if (ram.size - ram.pos >= length) {
             // RAM in use, append to ram if there is enough space
-            MEMCPY(ram.data + ram.pos, data, length);
+            memcpy(ram.data + ram.pos, data, length);
             ram.pos += length;
         } else {
             // If RAM is not big enough copy memory to flash

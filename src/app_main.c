@@ -43,11 +43,13 @@ const uint8_t privateKeyDataTest[] = {
 };
 #endif
 
-static const char const SIGN_MAGIC[] = "\x16IoTeX Signed Message:\n";
+static const char SIGN_MAGIC[] = "\x16IoTeX Signed Message:\n";
 
 unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 
 unsigned char io_event(unsigned char channel) {
+    UNUSED(channel);
+
     switch (G_io_seproxyhal_spi_buffer[0]) {
         case SEPROXYHAL_TAG_FINGER_EVENT: //
             UX_FINGER_EVENT(G_io_seproxyhal_spi_buffer);
@@ -58,8 +60,9 @@ unsigned char io_event(unsigned char channel) {
             break;
 
         case SEPROXYHAL_TAG_DISPLAY_PROCESSED_EVENT:
-            if (!UX_DISPLAYED())
+            if (!UX_DISPLAYED()) {
                 UX_DISPLAYED_EVENT();
+            }
             break;
 
         case SEPROXYHAL_TAG_TICKER_EVENT: { //
@@ -123,34 +126,39 @@ bool extractBip32(uint8_t *depth, uint32_t path[10], uint32_t rx, uint32_t offse
     return 1;
 }
 
-bool validateIoTexPath(uint8_t depth, uint32_t path[10]) {
+static bool validateIoTexPath(uint8_t depth, uint32_t path[10]) {
     // Only paths in the form 44'/304'/{account}'/0/{index} are supported
-    if (bip32_depth != 5) {
-        return 0;
+    if (depth != 5) {
+        return false;
     }
     if (path[0] != 0x8000002c || path[1] != 0x80000130 || path[3] != 0) {
-        return 0;
+        return false;
     }
-    return 1;
+    return true;
 }
 
-bool extractHRP(uint8_t *len, char *hrp, uint32_t rx, uint32_t offset) {
+static bool extractHRP(uint8_t *len, char *hrp, size_t rx, size_t offset) {
     if (rx < offset + 1) {
-        THROW(APDU_CODE_DATA_INVALID);
+        return false;
     }
 
     *len = G_io_apdu_buffer[offset];
-
     if (*len == 0 || *len > MAX_BECH32_HRP_LEN) {
-        THROW(APDU_CODE_DATA_INVALID);
+        return false;
+    }
+
+    if (rx < offset + 1 + *len) {
+        return false;
     }
 
     memcpy(hrp, G_io_apdu_buffer + offset + 1, *len);
     hrp[*len] = 0; // zero terminate
-    return 1;
+    return true;
 }
 
 bool process_chunk(volatile uint32_t *tx, uint32_t rx, bool getBip32) {
+    UNUSED(tx);
+
     int packageIndex = G_io_apdu_buffer[OFFSET_PCK_INDEX];
     int packageCount = G_io_apdu_buffer[OFFSET_PCK_COUNT];
 
@@ -229,7 +237,7 @@ void tx_accept_sign() {
                                        bip32_path, bip32_depth,
                                        privateKeyData, NULL);
             keys_secp256k1(&publicKey, &privateKey, privateKeyData);
-            memset(privateKeyData, 0, 32);
+            explicit_bzero(privateKeyData, sizeof(privateKeyData));
             result = sign_secp256k1(transaction_get_buffer(),
                                     transaction_get_buffer_length(),
                                     G_io_apdu_buffer,
@@ -269,6 +277,8 @@ int16_t addr_getData(char *title, int16_t max_title_length,
                      int16_t chunk_index,
                      int16_t *page_count_out,
                      int16_t *chunk_count_out) {
+    UNUSED(max_value_length); // max_value_length is always large enough to store address
+    UNUSED(chunk_index);
 
     if (page_count_out)
         *page_count_out = 1;
@@ -325,29 +335,31 @@ int16_t smsg_getData(char *title, int16_t max_title_length,
                      int16_t chunk_index,
                      int16_t *page_count_out,
                      int16_t *chunk_count_out) {
+    UNUSED(chunk_index);
 
     uint32_t length;
     const uint32_t max_display_length = 128;
     const uint32_t last_page_length = (transaction_get_buffer_length() * 2) % max_display_length;
 
+    int16_t page_count = (transaction_get_buffer_length() * 2) / max_display_length + (last_page_length != 0);
     if (page_count_out) {
-        *page_count_out = (transaction_get_buffer_length() * 2) / max_display_length + (last_page_length != 0);
+        *page_count_out = page_count;
     }
 
     if (chunk_count_out) {
         *chunk_count_out = 1;
     }
 
-    if (page_index + 1 != *page_count_out) {
+    if (page_index + 1 != page_count) {
         length = max_display_length;
     }
     else {
-        length = last_page_length ? last_page_length : max_display_length;
+        length = last_page_length;
     }
 
-    length = length ? length : max_display_length;
-    snprintf(title, max_title_length, "Raw Message %02d/%02d", page_index + 1, *page_count_out);
+    snprintf(title, max_title_length, "Raw Message %02d/%02d", page_index + 1, page_count);
     snprintf(key, max_key_length, "Length: %d", transaction_get_buffer_length());
+    /* coverity[format_error] */
     snprintf(value, max_value_length, "%.*H", length / 2, transaction_get_buffer() + page_index * max_display_length / 2);
   
     return 0;
@@ -367,7 +379,7 @@ static uint32_t num2str(uint32_t num, char *str, size_t max_len) {
     }
 
     while (num != 0) {
-        if (end - start < max_len - 1) {
+        if ((size_t) (end - start) < max_len - 1) {
             last = num % 10;
             *end = last + '0';
             num /= 10;
@@ -396,7 +408,7 @@ static uint32_t num2str(uint32_t num, char *str, size_t max_len) {
 void smsg_accept() {
     int result;
     uint32_t length;
-    uint8_t sign_msg[280];
+    uint8_t sign_msg[280] = {0};
     uint8_t private_key_data[32];
     const uint32_t sign_magic_length = strlen(SIGN_MAGIC);
   
@@ -404,7 +416,6 @@ void smsg_accept() {
     cx_ecfp_private_key_t private_key;
 
     /* Copy sign magic to sign message */
-    memset(sign_msg, 0, sizeof(sign_msg));
     memcpy(sign_msg, SIGN_MAGIC, sign_magic_length);
 
     /* Append byte length and byte to sign msg */
@@ -419,7 +430,7 @@ void smsg_accept() {
                                private_key_data, NULL);
 
     keys_secp256k1(&public_key, &private_key, private_key_data);
-    memset(private_key_data, 0, sizeof(private_key_data));
+    explicit_bzero(private_key_data, sizeof(private_key_data));
 
     result = sign_secp256k1(sign_msg,
                             sign_magic_length + length + transaction_get_buffer_length(),
@@ -486,7 +497,7 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
                     cx_ecfp_public_key_t publicKey;
                     getPubKey(&publicKey);
 
-                    os_memmove(G_io_apdu_buffer, publicKey.W, 65);
+                    memcpy(G_io_apdu_buffer, publicKey.W, 65);
                     *tx += 65;
 
                     THROW(APDU_CODE_OK);
@@ -523,7 +534,7 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
                     const char *error_msg = transaction_parse(&error_code);
                     if (error_msg != NULL) {
                         int error_msg_length = strlen(error_msg);
-                        os_memmove(G_io_apdu_buffer, error_msg, error_msg_length);
+                        memcpy(G_io_apdu_buffer, error_msg, error_msg_length);
                         *tx += (error_msg_length);
 
 #ifdef _DEBUG_PB_DECODE_
@@ -570,7 +581,7 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
                                        message_digest,
                                        CX_SHA256_SIZE);
 
-                        os_memmove(G_io_apdu_buffer, message_digest, CX_SHA256_SIZE);
+                        memcpy(G_io_apdu_buffer, message_digest, CX_SHA256_SIZE);
                         *tx += 32;
                     }
                     THROW(APDU_CODE_OK);
@@ -583,7 +594,7 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
                     cx_ecfp_private_key_t privateKey;
                     keys_secp256k1(&publicKey, &privateKey, privateKeyDataTest );
 
-                    os_memmove(G_io_apdu_buffer, publicKey.W, 65);
+                    memcpy(G_io_apdu_buffer, publicKey.W, 65);
                     *tx += 65;
 
                     THROW(APDU_CODE_OK);
@@ -647,7 +658,9 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
 }
 
 void handle_generic_apdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
-    if (rx > 4 && os_memcmp(G_io_apdu_buffer, "\xE0\x01\x00\x00", 4) == 0) {
+    UNUSED(flags);
+
+    if (rx > 4 && memcmp(G_io_apdu_buffer, "\xE0\x01\x00\x00", 4) == 0) {
         // Respond to get device info command
         uint8_t *p = G_io_apdu_buffer;
         // Target ID        4 bytes

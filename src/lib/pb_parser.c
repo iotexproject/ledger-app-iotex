@@ -13,18 +13,17 @@
 *  See the License for the specific language governing permissions and
 *  limitations under the License.
 ********************************************************************************/
-#include "stdio.h"
-#include "string.h"
-#include "stdlib.h"
-#include "stdint.h"
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
 
-#include "../../extra/nanopb/pb.h"
-#include "../../extra/nanopb/pb_encode.h"
-#include "../../extra/nanopb/pb_decode.h"
+#include "pb.h"
+#include "pb_decode.h"
+
 #include "pb_parser.h"
 #include "tx_parser.h"
 
-#include "../../proto/action.pb.h"
+#include "action.pb.h"
 
 #define min(a,b) \
    ({ __typeof__ (a) _a = (a); \
@@ -45,7 +44,7 @@ char *u642str(uint64_t num, char *str, size_t max_len) {
     }
 
     while (num != 0) {
-        if (end - start < max_len - 1) {
+        if ((size_t) (end - start) < max_len - 1) {
             last = num % 10;
             *end = last + '0';
             num /= 10;

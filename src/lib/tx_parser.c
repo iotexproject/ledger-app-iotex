@@ -23,9 +23,7 @@
 
 #if defined(TARGET_NANOX) || defined(TARGET_NANOS)
 #include "os.h"
-#define COPYFUNC os_memmove
 #else
-#define COPYFUNC memcpy
 #define __always_inline
 #endif
 
@@ -48,14 +46,14 @@ __always_inline void strcat_chunk_s(char *dst, uint16_t dst_max, const char *src
 
     if (src_chunk_size > 0) {
         // Check bounds
-        COPYFUNC(dst + prev_size, src_chunk, src_chunk_size);
+        memcpy(dst + prev_size, src_chunk, src_chunk_size);
         // terminate
         *(dst + prev_size + src_chunk_size) = 0;
     }
 }
 
 int16_t tx_traverse(int16_t root_token_index) {
-    
+    UNUSED(root_token_index);
 
     return 0;
 }
