@@ -360,12 +360,12 @@ int16_t smsg_getData(char *title, int16_t max_title_length,
     length = length ? length : max_display_length;
 
     if (transaction_get_buffer_length()) {
-        snprintf(title, max_title_length, "Raw Message %02d/%02d", page_index + 1, *page_count_out);
+        snprintf(title, max_title_length, "Raw Message %02d/%02d", page_index + 1, page_count);
         snprintf(key, max_key_length, "Length: %d", transaction_get_buffer_length());
         snprintf(value, max_value_length, "%.*H", length / 2, transaction_get_buffer() + page_index * max_display_length / 2);
     }
     else {
-        snprintf(title, max_title_length, "Raw Message %02d/%02d", 0, *page_count_out);
+        snprintf(title, max_title_length, "Raw Message %02d/%02d", 0, page_count);
         snprintf(key, max_key_length, "Length: %d", transaction_get_buffer_length());
         snprintf(value, max_value_length, "(null empty)");
     }
