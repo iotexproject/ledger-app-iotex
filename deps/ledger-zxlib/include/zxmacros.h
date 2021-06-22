@@ -39,12 +39,17 @@ extern "C" {
 #include "bolos_target.h"
 #include "os.h"
 #include "cx.h"
+#include <string.h>
 
 #if defined(TARGET_NANOX)
 #include "ux.h"
 #else
 #include "os_io_seproxyhal.h"
 #endif
+
+#define MEMMOVE memmove
+#define MEMSET memset
+#define MEMCPY memcpy
 
 #define WAIT_EVENT() io_seproxyhal_spi_recv(G_io_seproxyhal_spi_buffer, sizeof(G_io_seproxyhal_spi_buffer), 0)
 
@@ -60,9 +65,6 @@ extern "C" {
 #define IS_UX_ALLOWED (ux.params.len != BOLOS_UX_IGNORE && ux.params.len != BOLOS_UX_CONTINUE)
 #endif
 
-#define MEMMOVE os_memmove
-#define MEMSET os_memset
-#define MEMCPY os_memcpy
 #define MEMCPY_NV nvm_write
 
 void debug_printf(void* buffer);
@@ -75,10 +77,6 @@ void __logstack();
 #define LOGSTACK() __logstack()
 
 #else
-#include <string.h>
-#define MEMMOVE memmove
-#define MEMSET memset
-#define MEMCPY memcpy
 #define MEMCPY_NV memcpy
 #define LOG(str)
 #define LOGSTACK()
@@ -200,29 +198,6 @@ __Z_INLINE int64_t str_to_int64(const char *start, const char *end, char *error)
     }
 
     return value * sign;
-}
-
-__Z_INLINE void fpuint64_to_str(char *dst, const uint64_t value, uint8_t decimals) {
-    char buffer[30];
-
-    int64_to_str(buffer, 30, value);
-    size_t digits = strlen(buffer);
-
-    if (digits <= decimals) {
-        *dst++ = '0';
-        *dst++ = '.';
-        for (uint16_t i = 0; i < decimals - digits; i++, dst++)
-            *dst = '0';
-        strcpy(dst, buffer);
-    } else {
-        strcpy(dst, buffer);
-        const size_t shift = digits - decimals;
-        dst = dst + shift;
-        *dst++ = '.';
-
-        char *p = buffer + shift;
-        strcpy(dst, p);
-    }
 }
 
 __Z_INLINE uint64_t uint64_from_BEarray(const uint8_t data[8]) {

@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 from ledgerblue.comm import getDongle
 from ledgerblue.commException import CommException
-from secp256k1 import PublicKey
 import time
 import sys
 

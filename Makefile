@@ -60,10 +60,7 @@ DEFINES += HAVE_IO_USB HAVE_L4_USBLIB IO_USB_MAX_ENDPOINTS=7 IO_HID_EP_LENGTH=64
 
 DEFINES += LEDGER_MAJOR_VERSION=$(APPVERSION_M) LEDGER_MINOR_VERSION=$(APPVERSION_N) LEDGER_PATCH_VERSION=$(APPVERSION_P)
 
-DEFINES   += HAVE_U2F HAVE_IO_U2F
-DEFINES   += U2F_PROXY_MAGIC=\"CSM\"
 DEFINES   += USB_SEGMENT_SIZE=64
-DEFINES   += U2F_MAX_MESSAGE_SIZE=264 #257+5+2
 DEFINES   += HAVE_BOLOS_APP_STACK_CANARY
 
 WEBUSB_URL     = www.ledgerwallet.com
@@ -116,7 +113,7 @@ endif
 #########################
 
 CC := $(CLANGPATH)clang
-CFLAGS += -O3 -Os -Iextra/nanopb -Iproto
+CFLAGS += -O3 -Os -I. -Iproto -Wno-format
 
 AS := $(GCCPATH)arm-none-eabi-gcc
 AFLAGS +=
@@ -128,11 +125,27 @@ LDLIBS   += -lm -lgcc -lc
 ##########################
 include $(BOLOS_SDK)/Makefile.glyphs
 
-APP_SOURCE_PATH += src proto extra/nanopb deps/ledger-zxlib/include deps/ledger-zxlib/src
-SDK_SOURCE_PATH += lib_stusb lib_u2f lib_stusb_impl
-
-#SDK_SOURCE_PATH  += lib_blewbxx lib_blewbxx_impl
+APP_SOURCE_PATH += src deps/ledger-zxlib/include deps/ledger-zxlib/src
+SDK_SOURCE_PATH += lib_stusb lib_stusb_impl
 SDK_SOURCE_PATH  += lib_ux
+
+# nanopb
+include nanopb/extra/nanopb.mk
+
+DEFINES   += PB_NO_ERRMSG=1
+SOURCE_FILES += $(NANOPB_CORE)
+CFLAGS += "-I$(NANOPB_DIR)"
+
+# Build rule for proto files
+SOURCE_FILES += proto/action.pb.c
+
+proto/action.pb.c: proto/action.proto
+	$(PROTOC) $(PROTOC_OPTS) --nanopb_out=. proto/action.proto
+
+# target to also clean generated proto c files
+.SILENT : cleanall
+cleanall : clean
+	-@rm -rf proto/*.pb.c proto/*.pb.h
 
 load:
 	python -m ledgerblue.loadApp $(APP_LOAD_PARAMS)

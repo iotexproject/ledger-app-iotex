@@ -19,6 +19,9 @@
 extern "C" {
 #endif
 
+#include <stddef.h>
+#include <stdint.h>
+
 // the following function encodes directly from bytes
 // it will internally convert from 8 to 5 bits and return a
 // zero-terminated string in output

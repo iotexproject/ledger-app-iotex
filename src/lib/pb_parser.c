@@ -18,16 +18,16 @@
 #include "stdlib.h"
 #include "stdint.h"
 
-#include "../../extra/nanopb/pb.h"
-#include "../../extra/nanopb/pb_encode.h"
-#include "../../extra/nanopb/pb_decode.h"
+#include "pb.h"
+#include "action.pb.h"
+#include "pb_encode.h"
+#include "pb_decode.h"
+
 #include "../crypto.h"
 #include "tokens.h"
 #include "pb_parser.h"
 #include "tx_parser.h"
 #include "biginteger.h"
-
-#include "../../proto/action.pb.h"
 
 #define min(a,b) \
    ({ __typeof__ (a) _a = (a); \
