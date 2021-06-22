@@ -31,6 +31,7 @@
 #include "view.h"
 #include "crypto.h"
 #include "pb_parser.h"
+#include "lib/biginteger.h"
 
 #ifdef TESTING_ENABLED
 // Generate using always the same private data
@@ -327,7 +328,6 @@ void addr_reject() {
 
 
 // region sign personal message
-static uint32_t num2str(uint32_t num, char *str, size_t max_len);
 int16_t smsg_getData(char *title, int16_t max_title_length,
                      char *key, int16_t max_key_length,
                      char *value, int16_t max_value_length,
@@ -354,55 +354,23 @@ int16_t smsg_getData(char *title, int16_t max_title_length,
         length = max_display_length;
     }
     else {
-        length = last_page_length;
+        length = last_page_length ? last_page_length : max_display_length;
     }
 
-    snprintf(title, max_title_length, "Raw Message %02d/%02d", page_index + 1, page_count);
-    snprintf(key, max_key_length, "Length: %d", transaction_get_buffer_length());
-    /* coverity[format_error] */
-    snprintf(value, max_value_length, "%.*H", length / 2, transaction_get_buffer() + page_index * max_display_length / 2);
-  
+    length = length ? length : max_display_length;
+
+    if (transaction_get_buffer_length()) {
+        snprintf(title, max_title_length, "Raw Message %02d/%02d", page_index + 1, page_count);
+        snprintf(key, max_key_length, "Length: %d", transaction_get_buffer_length());
+        snprintf(value, max_value_length, "%.*H", length / 2, transaction_get_buffer() + page_index * max_display_length / 2);
+    }
+    else {
+        snprintf(title, max_title_length, "Raw Message %02d/%02d", 0, page_count);
+        snprintf(key, max_key_length, "Length: %d", transaction_get_buffer_length());
+        snprintf(value, max_value_length, "(null empty)");
+    }
+
     return 0;
-}
-
-
-static uint32_t num2str(uint32_t num, char *str, size_t max_len) {
-    char temp;
-    int last = 0;
-    uint32_t length = 0;
-    char *start = str, *end = str;
-
-    if (0 == num) {
-        str[0] = '0';
-        str[1] = 0;
-        return 1;
-    }
-
-    while (num != 0) {
-        if ((size_t) (end - start) < max_len - 1) {
-            last = num % 10;
-            *end = last + '0';
-            num /= 10;
-            end++;
-            length++;
-        }
-        else {
-            /* buffer too short */
-            return length;
-        }
-    }
-
-    /* string ends with \0 */
-    *end = 0;
-
-    while (start < --end) {
-        temp = *start;
-        *start = *end;
-        *end = temp;
-        start++;
-    }
-
-    return length;
 }
 
 void smsg_accept() {
@@ -419,9 +387,9 @@ void smsg_accept() {
     memcpy(sign_msg, SIGN_MAGIC, sign_magic_length);
 
     /* Append byte length and byte to sign msg */
-    length = num2str(transaction_get_buffer_length(),
-                     (char *)(sign_msg + sign_magic_length),
-                     sizeof(sign_msg) - sign_magic_length);
+    length = bigint_u642str(transaction_get_buffer_length(),
+                            (char *)(sign_msg + sign_magic_length),
+                            sizeof(sign_msg) - sign_magic_length);
     memcpy(sign_msg + sign_magic_length + length, transaction_get_buffer(), transaction_get_buffer_length());
 
 

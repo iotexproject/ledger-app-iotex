@@ -13,17 +13,21 @@
 *  See the License for the specific language governing permissions and
 *  limitations under the License.
 ********************************************************************************/
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
+#include "stdio.h"
+#include "string.h"
+#include "stdlib.h"
+#include "stdint.h"
 
 #include "pb.h"
+#include "action.pb.h"
+#include "pb_encode.h"
 #include "pb_decode.h"
 
+#include "../crypto.h"
+#include "tokens.h"
 #include "pb_parser.h"
 #include "tx_parser.h"
-
-#include "action.pb.h"
+#include "biginteger.h"
 
 #define min(a,b) \
    ({ __typeof__ (a) _a = (a); \
@@ -31,85 +35,51 @@
       _a < _b ? _a : _b; })
 
 #define PAYLOAD_STR "Payload"
+static const uint8_t executionTransferSignature[] = {0xa9, 0x05, 0x9c, 0xbb};
+#define XRC20_TX_RECIPIENT_ADDR_LEN BIGINT_U256_BYTES
+#define XRC20_TX_AMOUNT_BIG_INTEGER_LEN BIGINT_U256_BYTES
+#define XRC20_TX_DATA_LEN (sizeof(executionTransferSignature) + XRC20_TX_RECIPIENT_ADDR_LEN + XRC20_TX_AMOUNT_BIG_INTEGER_LEN)
 
-char *u642str(uint64_t num, char *str, size_t max_len) {
-    char temp;
-    int last = 0;
-    char *start = str, *end = str;
-
-    if (0 == num) {
-        str[0] = '0';
-        str[1] = 0;
-        return str;
-    }
-
-    while (num != 0) {
-        if ((size_t) (end - start) < max_len - 1) {
-            last = num % 10;
-            *end = last + '0';
-            num /= 10;
-            end++;
-        }
-        else {
-            /* buffer too short */
-            return NULL;
-        }
-    }
-
-    /* string ends with \0 */
-    *end = 0;
-
-    while (start < --end) {
-        temp = *start;
-        *start = *end;
-        *end = temp;
-        start++;
-    }
-
-    return str;
-}
-
-/* Transform rau to iotx: 1 iotx = 10**18 rau */
-const char *utils_rau2iotx(const char *rau, size_t rau_len, char *iotx, size_t max) {
+/* Adjust decimals */
+const char *utils_adjust_decimals(const char *org, size_t len, char *dest, size_t max, uint8_t decimals) {
     size_t r, w;
     size_t decimal_point_pos, pad_zero;
-    static const size_t transform_factor = 18;
 
-    /* iotx buffer too short or empty */
-    if (max < rau_len + 3 || max < transform_factor + 3 || !iotx) {
+    /* Buffer too short or empty */
+    if (max < len + 3 || max < decimals + 3 || !dest) {
         return NULL;
     }
 
-    if ('0' == rau[0]) {
-        iotx[0] = '0';
-        iotx[1] = 0;
-        return iotx;
+    if ('0' == org[0]) {
+        dest[0] = '0';
+        dest[1] = 0;
+        return dest;
     }
 
-    if (rau_len >= transform_factor) {
-        decimal_point_pos = rau_len - transform_factor;
+    if (len >= decimals) {
+        decimal_point_pos = len - decimals;
 
-        for (r = 0, w = 0; r < rau_len;) {
-            iotx[w++] = rau[r++];
+        for (r = 0, w = 0; r < len;) {
+            dest[w++] = org[r++];
 
             if (r == decimal_point_pos) {
-                iotx[w++] = '.';
+                dest[w++] = '.';
             }
         }
     }
     else {
         r = w = 0;
-        iotx[w++] = '0';
-        iotx[w++] = '.';
-        pad_zero = transform_factor - rau_len;
+        dest[w++] = '0';
+        dest[w++] = '.';
+        pad_zero = decimals - len;
 
         do {
-            iotx[w++] = '0';
+            dest[w++] = '0';
         } while (w < pad_zero + 2);
 
         do {
-            iotx[w++] = rau[r++];
-        } while (r < rau_len);
+            dest[w++] = org[r++];
+        } while (r < len);
 
     }
 
@@ -117,25 +87,28 @@ const char *utils_rau2iotx(const char *rau, size_t rau_len, char *iotx, size_t m
     w -= 1;
 
     /* Remove useless zeros */
-    while ('0' == iotx[w]) {
+    while ('0' == dest[w]) {
         --w;
     }
 
     /* Round number */
-    if ('.' == iotx[w]) {
+    if ('.' == dest[w]) {
         --w;
     }
 
-    iotx[w + 1] = 0;
-    return iotx;
+    dest[w + 1] = 0;
+    return dest;
 }
 
 static void display_ld_item(const uint8_t *pb_data, int ld_len, const char *name, field_type_t type) {
-    int offset = 0;
+    const token_t *token = NULL;
+    int offset = 0, token_index, token_amount_len;
+    bigint_uint256 vita_amount = {{0, 0}, {0, 0}};
+    char token_amount[BIGINT_U256_MAX_DD + 1] = {0};
     int cpylen = min(ld_len, tx_ctx.query.out_val_len - 1);
     snprintf(tx_ctx.query.out_key, tx_ctx.query.out_key_len, "%s", name);
 
-    switch (type) {
+    switch (type & 0xff00) {
         case String:
             strncpy(tx_ctx.query.out_val, (const char *)pb_data, cpylen);
             tx_ctx.query.out_val[cpylen] = 0;
@@ -159,7 +132,27 @@ static void display_ld_item(const uint8_t *pb_data, int ld_len, const char *name
             break;
 
         case Iotx:
-            utils_rau2iotx((const char *)pb_data, cpylen, tx_ctx.query.out_val, tx_ctx.query.out_val_len);
+            utils_adjust_decimals((const char *)pb_data, cpylen, tx_ctx.query.out_val, tx_ctx.query.out_val_len, 18);
+            break;
+
+        case XRC20Token:
+            token_index = type & 0xff;
+            /* Bytes ==> big-integer 256 ==> decimal strings */
+            bigint_bytes2uint256(pb_data, ld_len, &vita_amount, true);
+            token_amount_len = bigint_u2562str(vita_amount, token_amount, sizeof(token_amount));
+            snprintf(tx_ctx.query.out_val, tx_ctx.query.out_val_len, "%s", token_amount);
+
+            /* Token contract address is in the white-list, get token decimals and display token ticker name */
+            if (token_index > 0 && token_index <= IOTEX_TOKEN_COUNT) {
+                token = iotex_tokens + token_index - 1;
+                snprintf(tx_ctx.query.out_key, tx_ctx.query.out_key_len, "%s (%s)", name, token->ticker);
+                utils_adjust_decimals(token_amount, token_amount_len, tx_ctx.query.out_val, tx_ctx.query.out_val_len, token->decimals);
+            }
+
+            break;
+
+        case Bech32Addr:
+            encode_bech32_addr(tx_ctx.query.out_val, pb_data);
             break;
 
         default:
@@ -174,7 +167,7 @@ static void display_vi_item(uint64_t number, const char *name, field_type_t type
         snprintf(tx_ctx.query.out_val, tx_ctx.query.out_val_len, number ? "true" : "false");
     }
     else {
-        u642str(number, tx_ctx.query.out_val, tx_ctx.query.out_val_len);
+        bigint_u642str(number, tx_ctx.query.out_val, tx_ctx.query.out_val_len);
     }
 }
 
@@ -230,7 +223,7 @@ static uint32_t display_ld_msg(pb_istream_t *stream, int totalfields, int queryi
 
 static bool read_bytes(pb_istream_t *stream, const pb_field_iter_t *field, void **arg) {
     PB_UNUSED(field);
-    int idx =  (intptr_t) *arg;
+    int idx =  (intptr_t) * arg;
 
     if (stream->bytes_left && idx < TX_BUFFER_SIZE) {
         tx_ctx.buffer[idx].buf = stream->state;
@@ -427,9 +420,71 @@ static uint32_t display_transfer(pb_istream_t *stream, const iotextypes_Transfer
     return display_ld_msg(stream, 0, queryid, 0, 3);
 }
 
+static bool is_xrc20_token(const tx_buffer_t *data) {
+    if (!data->buf || !data->size) {
+        return false;
+    }
+
+    if (data->size != XRC20_TX_DATA_LEN) {
+        return false;
+    }
+
+    return !memcmp(executionTransferSignature, data->buf, sizeof(executionTransferSignature));
+}
+
+/* Get token index(start from 1) from contract address */
+static int get_xrc20_token(const char *address) {
+    size_t i = 0;
+    char bech32_addr[TOKEN_BECH32_ADDR_LEN] = {0};
+
+    for (i = 0; i < IOTEX_TOKEN_COUNT; i++) {
+        /* Get bech32 address, notice address only 20 bytes */
+        encode_bech32_addr20(bech32_addr, iotex_tokens[i].address);
+
+        if (!memcmp(bech32_addr, address, strlen(bech32_addr))) {
+            return i + 1;
+        }
+    }
+
+    return 0;
+}
+
+
 static uint32_t display_execution(pb_istream_t *stream, const iotextypes_Execution *exe, int queryid) {
     PB_UNUSED(exe);
-    return display_ld_msg(stream, 0, queryid, 0, 3);
+    int token_index = 0;
+    const tx_buffer_t *data = tx_ctx.buffer + 2;
+
+    if (is_xrc20_token(data)) {
+        tx_ctx.actiontype = ACTION_TX;
+        token_index = get_xrc20_token((const char *)tx_ctx.buffer[1].buf);
+
+        /* Signature, recipient address, vita amount(256bit big integer)*/
+        tx_ctx.buffer[0].key = "Amount";
+        tx_ctx.buffer[0].type = XRC20Token + token_index;
+        tx_ctx.buffer[0].size = XRC20_TX_AMOUNT_BIG_INTEGER_LEN;
+        tx_ctx.buffer[0].buf = data->buf + data->size - XRC20_TX_AMOUNT_BIG_INTEGER_LEN;
+
+        /* Backup contract to buffer[3] */
+        tx_ctx.buffer[3].buf = tx_ctx.buffer[1].buf;
+        tx_ctx.buffer[3].size = tx_ctx.buffer[1].size;
+
+        tx_ctx.buffer[1].key = "Recipient";
+        tx_ctx.buffer[1].type = Bech32Addr;
+        tx_ctx.buffer[1].size = XRC20_TX_RECIPIENT_ADDR_LEN;
+        tx_ctx.buffer[1].buf = data->buf + sizeof(executionTransferSignature);
+
+        /* Restore contract from buffer[3] */
+        tx_ctx.buffer[2].key = "Contract";
+        tx_ctx.buffer[2].type = String;
+        tx_ctx.buffer[2].buf = tx_ctx.buffer[3].buf;
+        tx_ctx.buffer[2].size = tx_ctx.buffer[3].size;
+
+        return display_ld_msg(stream, 0, queryid, 0, 3);;
+    }
+    else {
+        return display_ld_msg(stream, 0, queryid, 0, 3);
+    }
 }
 
 static uint32_t display_stake_create(pb_istream_t *stream, const iotextypes_StakeCreate *create, int queryid) {

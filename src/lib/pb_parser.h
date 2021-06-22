@@ -33,6 +33,8 @@ typedef enum {
     String = 0x1200,
     Bytes = 0x1300,
     Iotx = 0x1400,
+    XRC20Token = 0x1500,
+    Bech32Addr = 0x1600,
     Varint = 0x2000,
     Bool = 0x2100,
 } field_type_t;
