@@ -21,6 +21,7 @@
 #include "view_expl.h"
 
 #include "ux.h"
+#include "os_io_seproxyhal.h"
 #include "bagl.h"
 #include "zxmacros.h"
 #include "crypto.h"
