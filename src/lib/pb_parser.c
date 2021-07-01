@@ -56,7 +56,7 @@ const char *utils_adjust_decimals(const char *org, size_t len, char *dest, size_
         return dest;
     }
 
-    if (len >= decimals) {
+    if (len > decimals) {
         decimal_point_pos = len - decimals;
 
         for (r = 0, w = 0; r < len;) {
@@ -73,9 +73,9 @@ const char *utils_adjust_decimals(const char *org, size_t len, char *dest, size_
         dest[w++] = '.';
         pad_zero = decimals - len;
 
-        do {
+        while (w < pad_zero + 2) {
             dest[w++] = '0';
-        } while (w < pad_zero + 2);
+        };
 
         do {
             dest[w++] = org[r++];
