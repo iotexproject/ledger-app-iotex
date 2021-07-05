@@ -61,9 +61,8 @@ unsigned char io_event(unsigned char channel) {
             break;
 
         case SEPROXYHAL_TAG_DISPLAY_PROCESSED_EVENT:
-            if (!UX_DISPLAYED()) {
+            if (!UX_DISPLAYED())
                 UX_DISPLAYED_EVENT();
-            }
             break;
 
         case SEPROXYHAL_TAG_TICKER_EVENT: { //
@@ -113,18 +112,18 @@ unsigned short io_exchange_al(unsigned char channel, unsigned short tx_len) {
 
 bool extractBip32(uint8_t *depth, uint32_t path[10], uint32_t rx, uint32_t offset) {
     if (rx < offset + 1) {
-        return 0;
+        return false;
     }
 
     *depth = G_io_apdu_buffer[offset];
     const uint16_t req_offset = 4 * *depth + 1 + offset;
 
     if (rx < req_offset || *depth > 10) {
-        return 0;
+        return false;
     }
 
     memcpy(path, G_io_apdu_buffer + offset + 1, *depth * 4);
-    return 1;
+    return true;
 }
 
 static bool validateIoTexPath(uint8_t depth, uint32_t path[10]) {
@@ -144,6 +143,7 @@ static bool extractHRP(uint8_t *len, char *hrp, size_t rx, size_t offset) {
     }
 
     *len = G_io_apdu_buffer[offset];
+
     if (*len == 0 || *len > MAX_BECH32_HRP_LEN) {
         return false;
     }
@@ -369,7 +369,7 @@ int16_t smsg_getData(char *title, int16_t max_title_length,
         snprintf(key, max_key_length, "Length: %d", transaction_get_buffer_length());
         snprintf(value, max_value_length, "(null empty)");
     }
-
+  
     return 0;
 }
 

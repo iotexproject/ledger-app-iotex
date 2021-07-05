@@ -24,6 +24,7 @@
 uint8_t bip32_depth;
 uint32_t bip32_path[10];
 sigtype_t current_sigtype;
+static const char *bech32_tag = "io";
 
 uint8_t bech32_hrp_len;
 char bech32_hrp[MAX_BECH32_HRP_LEN + 1];
@@ -143,9 +144,9 @@ void get_bech32_addr(char *bech32_addr) {
 }
 
 void encode_bech32_addr(char *bech32_addr, const uint8_t *input) {
-    bech32EncodeFromBytes(bech32_addr, bech32_hrp, &(input[12]), 20);
+    bech32EncodeFromBytes(bech32_addr, bech32_tag, &(input[12]), 20);
 }
 
 void encode_bech32_addr20(char *bech32_addr, const uint8_t *input) {
-    bech32EncodeFromBytes(bech32_addr, bech32_hrp, input, 20);
+    bech32EncodeFromBytes(bech32_addr, bech32_tag, input, 20);
 }

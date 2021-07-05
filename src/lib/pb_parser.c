@@ -454,10 +454,10 @@ static uint32_t display_execution(pb_istream_t *stream, const iotextypes_Executi
     PB_UNUSED(exe);
     int token_index = 0;
     const tx_buffer_t *data = tx_ctx.buffer + 2;
+    token_index = get_xrc20_token((const char *)tx_ctx.buffer[1].buf);
 
-    if (is_xrc20_token(data)) {
+    if (is_xrc20_token(data) && token_index != 0) {
         tx_ctx.actiontype = ACTION_TX;
-        token_index = get_xrc20_token((const char *)tx_ctx.buffer[1].buf);
 
         /* Signature, recipient address, vita amount(256bit big integer)*/
         tx_ctx.buffer[0].key = "Amount";
