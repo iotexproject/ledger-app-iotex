@@ -233,8 +233,21 @@ static bool read_bytes(pb_istream_t *stream, const pb_field_iter_t *field, void 
     return true;
 }
 
-static bool submsg_callback(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+
+static bool candidate_submsg_callback(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+    PB_UNUSED(arg);
     PB_UNUSED(field);
+
+    if (stream->bytes_left) {
+        tx_ctx.buffer[3].buf = stream->state;
+        tx_ctx.buffer[3].size = stream->bytes_left;
+    }
+
+    return true;
+}
+
+static bool submsg_callback(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+    PB_UNUSED(stream);
     PB_UNUSED(arg);
 
     if (iotextypes_ActionCore_transfer_tag == field->tag) {
@@ -403,13 +416,29 @@ static bool submsg_callback(pb_istream_t *stream, const pb_field_t *field, void 
         cdd->payload.funcs.decode = read_bytes;
         cdd->payload.arg = (void *)2;
 
-        tx_ctx.buffer[3].buf = stream->state;
-        tx_ctx.buffer[3].size = stream->bytes_left;
-
-        pb_read(stream, NULL, stream->bytes_left);
+        cdd->cb_candidate.funcs.decode = candidate_submsg_callback;
     }
     else if (iotextypes_ActionCore_candidateUpdate_tag == field->tag) {
         tx_ctx.actiontype = ACTION_SKT_CDD_UPDATE;
+        iotextypes_CandidateBasicInfo *cdd = field->pData;
+
+        tx_ctx.buffer[0].key = "Name";
+        tx_ctx.buffer[0].type = String;
+
+        tx_ctx.buffer[1].key = "Operator Address";
+        tx_ctx.buffer[1].type = String;
+
+        tx_ctx.buffer[2].key = "Reward Address";
+        tx_ctx.buffer[2].type = String;
+
+        cdd->name.funcs.decode = read_bytes;
+        cdd->name.arg = (void *)0;
+
+        cdd->operatorAddress.funcs.decode = read_bytes;
+        cdd->operatorAddress.arg = (void *)1;
+
+        cdd->rewardAddress.funcs.decode = read_bytes;
+        cdd->rewardAddress.arg = (void *)2;
     }
 
     return true;
@@ -574,27 +603,49 @@ static uint32_t display_stake_change_cdd(pb_istream_t *stream, const iotextypes_
     return totalfields;
 }
 
-static uint32_t display_stake_cdd_update(pb_istream_t *stream, const iotextypes_CandidateBasicInfo *cdd, int queryid) {
-    PB_UNUSED(stream);
-    const field_display_t members[] = {
-        {"Name", String, {.ld = {(const char *)cdd->name, strlen(cdd->name)}}},
-        {"Operator Address", String, {.ld = {(const char *)cdd->operatorAddress, strlen(cdd->operatorAddress)}}},
-        {"Reward Address", String, {.ld = {(const char *)cdd->rewardAddress, strlen(cdd->rewardAddress)}}},
-    };
-
-    return display_sub_msg(members, sizeof(members) / sizeof(members[0]), 0, queryid);
+static uint32_t display_stake_cdd_update(pb_istream_t *stream, iotextypes_CandidateBasicInfo *cdd, int queryid) {
+    PB_UNUSED(cdd);
+    return display_ld_msg(stream, 0, queryid, 0, 3);
 }
 
-static uint32_t display_stake_cdd_register(pb_istream_t *stream, iotextypes_CandidateRegister *cdd, int queryid) {
+static uint32_t display_stake_cdd_register(pb_istream_t *stream, const iotextypes_CandidateRegister *cdd, int queryid) {
     int totalfields = 0;
-    pb_istream_t sub_stream = pb_istream_from_buffer(tx_ctx.buffer[3].buf, tx_ctx.buffer[3].size);
-
-    if (!pb_decode(&sub_stream, iotextypes_CandidateRegister_fields, cdd)) {
-        return 0;
-    }
 
     if (cdd->has_candidate) {
-        totalfields += display_stake_cdd_update(stream, &cdd->candidate, queryid);
+        bool eof;
+        char buffer[42];
+        uint32_t tag, len;
+        pb_wire_type_t type;
+        const char cdd_keys[][18] = {"Name", "Operator Address", "Reward Address"};
+        pb_istream_t sub_stream = pb_istream_from_buffer(tx_ctx.buffer[3].buf, tx_ctx.buffer[3].size);
+
+        while (pb_decode_tag(&sub_stream, &type, &tag, &eof) && !eof) {
+            if (type != PB_WT_STRING) {
+                break;
+            }
+
+            pb_istream_t str_stream;
+            memset(buffer, 0, sizeof(buffer));
+
+            if (!pb_make_string_substream(&sub_stream, &str_stream)) {
+                break;
+            }
+
+            /* Read string to buffer */
+            len = str_stream.bytes_left;
+
+            if (!pb_read(&str_stream, (pb_byte_t *)buffer, str_stream.bytes_left)) {
+                break;
+            }
+
+            pb_close_string_substream(&sub_stream, &str_stream);
+
+            if (queryid == totalfields && tag <= iotextypes_CandidateBasicInfo_rewardAddress_tag) {
+                display_ld_item((const uint8_t *)buffer, len, cdd_keys[tag - 1], String);
+            }
+
+            totalfields += 1;
+        }
     }
 
     const field_display_t members[] = {

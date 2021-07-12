@@ -1,9 +1,4 @@
 iotextypes.ActionCore submsg_callback: true
 iotextypes.ActionCore.gasPrice max_size:40
 
-
-//iotextypes.CandidateRegister submsg_callback: true
-
-iotextypes.CandidateBasicInfo.name 	        max_size:42
-iotextypes.CandidateBasicInfo.rewardAddress 	max_size:42
-iotextypes.CandidateBasicInfo.operatorAddress 	max_size:42
+iotextypes.CandidateRegister submsg_callback: true
