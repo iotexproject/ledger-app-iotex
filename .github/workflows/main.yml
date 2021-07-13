@@ -56,7 +56,7 @@ jobs:
     runs-on: ubuntu-latest
 
     container:
-      image: ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder:latest
+      image: ghcr.io/ledgerhq/ledger-app-builder/ledger-app-scanner:latest
 
     steps:
       - uses: actions/checkout@v2
