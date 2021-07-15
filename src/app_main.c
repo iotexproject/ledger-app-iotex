@@ -30,6 +30,7 @@
 #include "lib/tx_display.h"
 #include "view.h"
 #include "crypto.h"
+#include "settings.h"
 #include "pb_parser.h"
 #include "lib/biginteger.h"
 
@@ -44,8 +45,8 @@ const uint8_t privateKeyDataTest[] = {
 };
 #endif
 
+const nvm_settings_t N_nvm_settings;
 static const char SIGN_MAGIC[] = "\x16IoTeX Signed Message:\n";
-
 unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 
 unsigned char io_event(unsigned char channel) {
@@ -224,11 +225,17 @@ int16_t tx_getData(char *title, int16_t max_title_length,
     return *chunk_count_out;
 }
 
+void tx_reject();
 void tx_accept_sign() {
     // Generate keys
     cx_ecfp_public_key_t publicKey;
     cx_ecfp_private_key_t privateKey;
     uint8_t privateKeyData[32];
+
+    if (tx_ctx.has_contract_data && !N_settings.contractDataAllowed) {
+        tx_reject();
+        return;
+    }
 
     unsigned int length = 0;
     int result = 0;
@@ -250,6 +257,7 @@ void tx_accept_sign() {
             THROW(APDU_CODE_INS_NOT_SUPPORTED);
             break;
     }
+
     if (result == 1) {
         set_code(G_io_apdu_buffer, length, APDU_CODE_OK);
         io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, length + 2);
@@ -514,7 +522,6 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
                     }
 
                     tx_display_index_root();
-
                     view_set_handlers(tx_getData, tx_accept_sign, tx_reject);
                     view_tx_show(0);
 
@@ -654,6 +661,16 @@ void handle_generic_apdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32
 
 void app_init() {
     io_seproxyhal_init();
+
+    /* First time initialize settings options */
+    if (N_settings.initialized != 0x01) {
+        nvm_settings_t settings;
+
+        settings.contractDataAllowed = 0x00;
+        settings.initialized = 0x01;
+        nvm_write((void *) &N_settings, (void *) &settings, sizeof(nvm_settings_t));
+    }
+
     USB_power(0);
     USB_power(1);
     view_idle(0);

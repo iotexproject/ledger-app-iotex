@@ -53,6 +53,8 @@ typedef struct {
     uint8_t max_level;
     uint8_t max_depth;
     char actiontype;
+    bool has_contract_data;
+    int8_t contract_data_idx;
     tx_buffer_t buffer[TX_BUFFER_SIZE];
 } tx_context_t;
 

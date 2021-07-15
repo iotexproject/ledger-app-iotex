@@ -250,6 +250,9 @@ static bool submsg_callback(pb_istream_t *stream, const pb_field_t *field, void 
     PB_UNUSED(stream);
     PB_UNUSED(arg);
 
+    tx_ctx.contract_data_idx = -1;
+    tx_ctx.has_contract_data = false;
+
     if (iotextypes_ActionCore_transfer_tag == field->tag) {
         iotextypes_Transfer *tx = field->pData;
         tx_ctx.actiontype = ACTION_TX;
@@ -271,6 +274,8 @@ static bool submsg_callback(pb_istream_t *stream, const pb_field_t *field, void 
 
         tx->payload.funcs.decode = read_bytes;
         tx->payload.arg = (void *)2;
+
+        tx_ctx.contract_data_idx = 2;
     }
     else if (iotextypes_ActionCore_execution_tag == field->tag) {
         iotextypes_Execution *exe = field->pData;
@@ -293,6 +298,8 @@ static bool submsg_callback(pb_istream_t *stream, const pb_field_t *field, void 
 
         exe->data.funcs.decode = read_bytes;
         exe->data.arg = (void *)2;
+
+        tx_ctx.contract_data_idx = 2;
     }
     else if (iotextypes_ActionCore_stakeCreate_tag == field->tag) {
         iotextypes_StakeCreate *create = field->pData;
@@ -315,6 +322,8 @@ static bool submsg_callback(pb_istream_t *stream, const pb_field_t *field, void 
 
         create->payload.funcs.decode = read_bytes;
         create->payload.arg = (void *)2;
+
+        tx_ctx.contract_data_idx = 2;
     }
     else if (iotextypes_ActionCore_stakeUnstake_tag == field->tag) {
         iotextypes_StakeReclaim *unstake = field->pData;
@@ -325,6 +334,8 @@ static bool submsg_callback(pb_istream_t *stream, const pb_field_t *field, void 
 
         unstake->payload.funcs.decode = read_bytes;
         unstake->payload.arg = (void *)0;
+
+        tx_ctx.contract_data_idx = 0;
     }
     else if (iotextypes_ActionCore_stakeWithdraw_tag == field->tag) {
         iotextypes_StakeReclaim *withdraw = field->pData;
@@ -335,6 +346,8 @@ static bool submsg_callback(pb_istream_t *stream, const pb_field_t *field, void 
 
         withdraw->payload.funcs.decode = read_bytes;
         withdraw->payload.arg = (void *)0;
+
+        tx_ctx.contract_data_idx = 0;
     }
     else if (iotextypes_ActionCore_stakeAddDeposit_tag == field->tag) {
         iotextypes_StakeAddDeposit *deposit = field->pData;
@@ -351,6 +364,8 @@ static bool submsg_callback(pb_istream_t *stream, const pb_field_t *field, void 
 
         deposit->payload.funcs.decode = read_bytes;
         deposit->payload.arg = (void *)1;
+
+        tx_ctx.contract_data_idx = 1;
     }
     else if (iotextypes_ActionCore_stakeRestake_tag == field->tag) {
         iotextypes_StakeRestake *restake = field->pData;
@@ -361,6 +376,8 @@ static bool submsg_callback(pb_istream_t *stream, const pb_field_t *field, void 
 
         restake->payload.funcs.decode = read_bytes;
         restake->payload.arg = (void *)0;
+
+        tx_ctx.contract_data_idx = 0;
     }
     else if (iotextypes_ActionCore_stakeChangeCandidate_tag == field->tag) {
         iotextypes_StakeChangeCandidate *cdd = field->pData;
@@ -377,6 +394,8 @@ static bool submsg_callback(pb_istream_t *stream, const pb_field_t *field, void 
 
         cdd->payload.funcs.decode = read_bytes;
         cdd->payload.arg = (void *)1;
+
+        tx_ctx.contract_data_idx = 1;
     }
     else if (iotextypes_ActionCore_stakeTransferOwnership_tag == field->tag) {
         iotextypes_StakeTransferOwnership *ownership = field->pData;
@@ -393,6 +412,8 @@ static bool submsg_callback(pb_istream_t *stream, const pb_field_t *field, void 
 
         ownership->payload.funcs.decode = read_bytes;
         ownership->payload.arg = (void *)1;
+
+        tx_ctx.contract_data_idx = 1;
     }
     else if (iotextypes_ActionCore_candidateRegister_tag == field->tag) {
         iotextypes_CandidateRegister *cdd = field->pData;
@@ -416,6 +437,7 @@ static bool submsg_callback(pb_istream_t *stream, const pb_field_t *field, void 
         cdd->payload.funcs.decode = read_bytes;
         cdd->payload.arg = (void *)2;
 
+        tx_ctx.contract_data_idx = 2;
         cdd->cb_candidate.funcs.decode = candidate_submsg_callback;
     }
     else if (iotextypes_ActionCore_candidateUpdate_tag == field->tag) {
@@ -487,6 +509,9 @@ static uint32_t display_execution(pb_istream_t *stream, const iotextypes_Executi
 
     if (is_xrc20_token(data) && token_index != 0) {
         tx_ctx.actiontype = ACTION_TX;
+
+        /* XRC20 tx data has been parsed so there's not contract data */
+        tx_ctx.has_contract_data = false;
 
         /* Signature, recipient address, vita amount(256bit big integer)*/
         tx_ctx.buffer[0].key = "Amount";
@@ -724,6 +749,12 @@ int decode_pb(const uint8_t *pb_data, uint32_t len, uint32_t *totalfields_out, i
         }
 
         totalfields++;
+    }
+
+    /* Check if transactions has contract data mark it */
+    if (tx_ctx.contract_data_idx >= 0 && tx_ctx.contract_data_idx < TX_BUFFER_SIZE) {
+        const tx_buffer_t *data = tx_ctx.buffer + tx_ctx.contract_data_idx;
+        tx_ctx.has_contract_data = data->buf && data->size;
     }
 
     switch (action_core.which_action) {
