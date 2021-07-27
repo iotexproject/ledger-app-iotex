@@ -488,7 +488,14 @@ void view_addr_choose_show(unsigned int _) {
 
 void view_settings_show(unsigned int _) {
     UNUSED(_);
+#if defined(TARGET_NANOS)
     UX_MENU_DISPLAY(2, menu_main, NULL);
+#elif defined(TARGET_NANOX)
+    if(G_ux.stack_count == 0) {
+        ux_stack_push();
+    }
+    ux_flow_init(0, ux_idle_flow, NULL);
+#endif
 }
 
 void view_contract_data_allow(unsigned int _) {
