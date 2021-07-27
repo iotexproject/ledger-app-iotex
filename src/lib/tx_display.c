@@ -83,6 +83,9 @@ display_cache_t *tx_display_cache() {
     }
 
     // Clear values
+    tx_ctx.contract_data_idx = -1;
+    tx_ctx.has_contract_data = false;
+
     display_cache.num_pages = 0;
     memset(display_cache.num_subpages, 0, NUM_REQUIRED_ROOT_PAGES);
     memset(display_cache.subroot_start_token, TX_TOKEN_NOT_FOUND, NUM_REQUIRED_ROOT_PAGES);
