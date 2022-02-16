@@ -96,7 +96,7 @@ struct {
 } view_addr_choose_data;
 
 
-#if defined(TARGET_NANOX)
+#if defined(TARGET_NANOX) || defined(TARGET_NANOS2)
 
 #include "ux.h"
 ux_state_t G_ux;
@@ -221,7 +221,7 @@ static const bagl_element_t view_addr_choose[] = {
         UI_LabelLine(UIID_LABEL + 1, 0, 9 + UI_11PX * 1, UI_SCREEN_WIDTH, UI_11PX, UI_WHITE, UI_BLACK,
                      (const char *) viewctl.dataKey),
 
-#if defined(TARGET_NANOX)
+#if defined(TARGET_NANOX) || defined(TARGET_NANOS2)
     UI_Icon(UIID_ICONLEFT1, 2, 28, 4, 7, BAGL_GLYPH_ICON_LEFT),
     UI_Icon(UIID_ICONRIGHT1, 122, 28, 4, 7, BAGL_GLYPH_ICON_RIGHT),
     UI_Icon(UIID_ICONLEFT2, 2, 28, 4, 7, BAGL_GLYPH_ICON_LEFT),
@@ -320,7 +320,7 @@ static unsigned int view_addr_choose_button(unsigned int button_mask, unsigned i
                     break;
                 case VIEW_ADDR_MODE_SHOW:
                     // DO NOTHING
-#if defined(TARGET_NANOX)
+#if defined(TARGET_NANOX) || defined(TARGET_NANOS2)
                     show_idle_menu();
 #endif
                     return 0;
@@ -406,7 +406,7 @@ void view_idle(unsigned int ignored) {
 
 #if defined(TARGET_NANOS)
     UX_MENU_DISPLAY(0, menu_main, NULL);
-#elif defined(TARGET_NANOX)
+#elif defined(TARGET_NANOX) || defined(TARGET_NANOS2)
     if(G_ux.stack_count == 0) {
         ux_stack_push();
     }
@@ -490,7 +490,7 @@ void view_settings_show(unsigned int _) {
     UNUSED(_);
 #if defined(TARGET_NANOS)
     UX_MENU_DISPLAY(2, menu_main, NULL);
-#elif defined(TARGET_NANOX)
+#elif defined(TARGET_NANOX) || defined(TARGET_NANOS2)
     if(G_ux.stack_count == 0) {
         ux_stack_push();
     }
@@ -518,7 +518,7 @@ void view_app_settings(unsigned int _) {
     snprintf(viewctl.dataValue, sizeof(viewctl.dataValue), "%s", (N_settings.contractDataAllowed ? "Allowed": "NOT Allowed"));
 #if defined(TARGET_NANOS)
     UX_MENU_DISPLAY(0, menu_settings, NULL);
-#elif defined(TARGET_NANOX)
+#elif defined(TARGET_NANOX) || defined(TARGET_NANOS2)
     if(G_ux.stack_count == 0) {
         ux_stack_push();
     }
@@ -536,7 +536,7 @@ void view_addr_confirm(unsigned int _) {
 
 #if defined(TARGET_NANOS)
     view_addr_choose_refresh();
-#elif defined(TARGET_NANOX)
+#elif defined(TARGET_NANOX) || defined(TARGET_NANOS2)
     if(G_ux.stack_count == 0) {
         ux_stack_push();
     }
@@ -549,7 +549,7 @@ void view_tx_menu(unsigned int unused) {
 
 #if defined(TARGET_NANOS)
     UX_MENU_DISPLAY(0, menu_transaction_info, NULL);
-#elif defined(TARGET_NANOX)
+#elif defined(TARGET_NANOX) || defined(TARGET_NANOS2)
     if(G_ux.stack_count == 0) {
         ux_stack_push();
     }
@@ -562,7 +562,7 @@ void view_smsg_menu(unsigned int unused) {
 
 #if defined(TARGET_NANOS)
     UX_MENU_DISPLAY(0, menu_sign_msg, NULL);
-#elif defined(TARGET_NANOX)
+#elif defined(TARGET_NANOX) || defined(TARGET_NANOS2)
     if(G_ux.stack_count == 0) {
         ux_stack_push();
     }

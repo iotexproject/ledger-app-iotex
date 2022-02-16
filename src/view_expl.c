@@ -27,7 +27,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#if defined(TARGET_NANOX)
+#if defined(TARGET_NANOX) || defined(TARGET_NANOS2)
 static const bagl_element_t viewexpl_bagl[] = {
     UI_BACKGROUND_LEFT_RIGHT_ICONS,
     UI_LabelLine(UIID_LABEL+0, 0, 9 + UI_11PX * 0, UI_SCREEN_WIDTH, UI_11PX, UI_WHITE, UI_BLACK, (const char *) viewctl.title),
@@ -174,7 +174,7 @@ const bagl_element_t *viewexpl_bagl_prepro(const bagl_element_t *element) {
 }
 
 void viewexpl_display_ux() {
-#if defined(TARGET_NANOX)
+#if defined(TARGET_NANOX) || defined(TARGET_NANOS2)
     UX_DISPLAY(viewexpl_bagl, viewexpl_bagl_prepro);
 #else
     UX_DISPLAY(viewexpl_bagl_valuescrolling, viewexpl_bagl_prepro);

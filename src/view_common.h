@@ -34,7 +34,7 @@ enum UI_DISPLAY_MODE {
     PENDING
 };
 
-#if defined(TARGET_NANOX)
+#if defined(TARGET_NANOX) || defined(TARGET_NANOS2)
 #define MAX_SCREEN_NUM_LINES       4
 #endif
 
@@ -57,7 +57,7 @@ typedef struct {
     char dataKey[MAX_CHARS_PER_KEY_LINE];
     char dataValue[MAX_CHARS_PER_VALUE_LINE];
 
-#if defined(TARGET_NANOX)
+#if defined(TARGET_NANOX) || defined(TARGET_NANOS2)
     char dataValueChunk[MAX_SCREEN_NUM_LINES][MAX_SCREEN_LINE_WIDTH+1];
 #endif
 } viewctl_s;

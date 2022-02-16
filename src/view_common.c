@@ -127,7 +127,7 @@ void viewctl_crop_key() {
 }
 
 void viewctl_dataValue_split() {
-#if defined(TARGET_NANOX)
+#if defined(TARGET_NANOX) || defined(TARGET_NANOS2)
     const int dataValueLen = strlen(viewctl.dataValue);
 
     int offset = 0;
@@ -175,7 +175,7 @@ void viewctl_display_page() {
                      viewctl.chunksCount);
         }
 
-#if defined(TARGET_NANOX)
+#if defined(TARGET_NANOX) || defined(TARGET_NANOS2)
         viewctl_dataValue_split();
 #elif defined(TARGET_NANOS)
         switch (viewctl.scrolling_mode) {

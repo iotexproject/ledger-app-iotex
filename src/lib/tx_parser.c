@@ -21,7 +21,7 @@
 #include "tx_parser.h"
 #include "os.h"
 
-#if defined(TARGET_NANOX) || defined(TARGET_NANOS)
+#if defined(TARGET_NANOX) || defined(TARGET_NANOS2) || defined(TARGET_NANOS)
 #include "os.h"
 #else
 #define __always_inline

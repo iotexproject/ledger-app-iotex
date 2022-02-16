@@ -21,7 +21,7 @@
 #include "tx_display.h"
 #include "transaction.h"
 
-#if defined(TARGET_NANOS) || defined(TARGET_NANOX)
+#if defined(TARGET_NANOS) || defined(TARGET_NANOX) || defined(TARGET_NANOS2)
 #include "os.h"
 #else
 #define PIC(X) X
