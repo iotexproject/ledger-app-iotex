@@ -744,11 +744,13 @@ static uint32_t display_stake_tx_ownership(pb_istream_t *stream, const iotextype
 }
 
 static uint32_t display_deposit_to_rewarding_fund(pb_istream_t *stream, const iotextypes_DepositToRewardingFund *deposit, int queryid) {
-    return display_ld_msg(stream, totalfields, queryid, 0, 2);;
+    PB_UNUSED(deposit);
+    return display_ld_msg(stream, 0, queryid, 0, 2);;
 }
 
-static uint32_t display_claim_from_rewarding_fund(pb_istream_t *stream, const iotextypes_DepositToRewardingFund *deposit, int queryid) {
-    return display_ld_msg(stream, totalfields, queryid, 0, 2);;
+static uint32_t display_claim_from_rewarding_fund(pb_istream_t *stream, const iotextypes_ClaimFromRewardingFund *claim, int queryid) {
+    PB_UNUSED(claim);
+    return display_ld_msg(stream, 0, queryid, 0, 2);;
 }
 
 int decode_pb(const uint8_t *pb_data, uint32_t len, uint32_t *totalfields_out, int queryid) {
