@@ -462,6 +462,42 @@ static bool submsg_callback(pb_istream_t *stream, const pb_field_t *field, void 
         cdd->rewardAddress.funcs.decode = read_bytes;
         cdd->rewardAddress.arg = (void *)2;
     }
+    else if (iotextypes_ActionCore_depositToRewardingFund_tag == field->tag) {
+        tx_ctx.actiontype = ACTION_RWD_DEPOSIT;
+        iotextypes_DepositToRewardingFund *cdd = field->pData;
+
+        tx_ctx.buffer[0].key = "Amount";
+        tx_ctx.buffer[0].type = Iotx;
+
+        tx_ctx.buffer[1].key = "Data";
+        tx_ctx.buffer[1].type = Bytes;
+
+        cdd->amount.funcs.decode = read_bytes;
+        cdd->amount.arg = (void *)0;
+
+        cdd->data.funcs.decode = read_bytes;
+        cdd->data.arg = (void *)1;
+
+        tx_ctx.contract_data_idx = 1;
+    }
+    else if (iotextypes_ActionCore_claimFromRewardingFund_tag == field->tag) {
+        tx_ctx.actiontype = ACTION_RWD_CLAIM;
+        iotextypes_ClaimFromRewardingFund *cdd = field->pData;
+
+        tx_ctx.buffer[0].key = "Amount";
+        tx_ctx.buffer[0].type = Iotx;
+
+        tx_ctx.buffer[1].key = "Data";
+        tx_ctx.buffer[1].type = Bytes;
+
+        cdd->amount.funcs.decode = read_bytes;
+        cdd->amount.arg = (void *)0;
+
+        cdd->data.funcs.decode = read_bytes;
+        cdd->data.arg = (void *)1;
+
+        tx_ctx.contract_data_idx = 1;
+    }
 
     return true;
 }
@@ -707,6 +743,14 @@ static uint32_t display_stake_tx_ownership(pb_istream_t *stream, const iotextype
     return totalfields;
 }
 
+static uint32_t display_deposit_to_rewarding_fund(pb_istream_t *stream, const iotextypes_DepositToRewardingFund *deposit, int queryid) {
+    return display_ld_msg(stream, totalfields, queryid, 0, 2);;
+}
+
+static uint32_t display_claim_from_rewarding_fund(pb_istream_t *stream, const iotextypes_DepositToRewardingFund *deposit, int queryid) {
+    return display_ld_msg(stream, totalfields, queryid, 0, 2);;
+}
+
 int decode_pb(const uint8_t *pb_data, uint32_t len, uint32_t *totalfields_out, int queryid) {
     int totalfields = 0;
     pb_istream_t istream = pb_istream_from_buffer(pb_data, len);
@@ -800,6 +844,14 @@ int decode_pb(const uint8_t *pb_data, uint32_t len, uint32_t *totalfields_out, i
 
         case iotextypes_ActionCore_candidateUpdate_tag:
             totalfields += display_stake_cdd_update(&istream, &action_core.action.candidateUpdate, queryid - totalfields);
+            break;
+
+        case iotextypes_ActionCore_depositToRewardingFund_tag:
+            totalfields += display_deposit_to_rewarding_fund(&istream, &action_core.action.depositToRewardingFund, queryid - totalfields);
+            break;
+
+        case iotextypes_ActionCore_claimFromRewardingFund_tag:
+            totalfields += display_claim_from_rewarding_fund(&istream, &action_core.action.claimFromRewardingFund, queryid - totalfields);
             break;
 
         default:

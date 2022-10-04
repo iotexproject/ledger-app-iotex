@@ -196,7 +196,7 @@ int16_t tx_getData(char *title, int16_t max_title_length,
                    int16_t *page_count_out,
                    int16_t *chunk_count_out) {
     /* Nonos max length 9 chars, Nonox can be different */
-    static const char action_name[][9] = {
+    static const char action_name[][11] = {
         "INVALID",
         "Transfer",
         "Executio",
@@ -209,6 +209,8 @@ int16_t tx_getData(char *title, int16_t max_title_length,
         "TxOwners",
         "CandiReg",
         "CdUpdate",
+        "DpReward",
+        "ClReward",
     };
 
     *page_count_out = tx_display_num_pages();
