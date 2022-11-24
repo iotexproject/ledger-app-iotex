@@ -20,7 +20,7 @@
 #include "view_templates.h"
 #include "view_expl.h"
 
-#include "glyphs.h"
+#include "ux.h"
 #include "bagl.h"
 #include "zxmacros.h"
 
@@ -115,9 +115,9 @@ void menu_right() {
 }
 
 void viewctl_crop_key() {
-    int offset = strlen((char *) viewctl.dataKey) - MAX_SCREEN_LINE_WIDTH;
+    int offset = strlen(viewctl.dataKey) - MAX_SCREEN_LINE_WIDTH;
     if (offset > 0) {
-        char *start = (char *) viewctl.dataKey;
+        char *start = viewctl.dataKey;
         for (;;) {
             *start = start[offset];
             if (*start++ == '\0')
@@ -127,14 +127,14 @@ void viewctl_crop_key() {
 }
 
 void viewctl_dataValue_split() {
-#if defined(TARGET_NANOX)
+#if defined(TARGET_NANOX) || defined(TARGET_NANOS2)
     const int dataValueLen = strlen(viewctl.dataValue);
 
     int offset = 0;
     for (int i = 0; i < MAX_SCREEN_NUM_LINES; i++) {
         viewctl.dataValueChunk[i][0] = 0;   // clean/terminate strings
         if (offset < dataValueLen) {
-            snprintf((char *) viewctl.dataValueChunk[i], MAX_SCREEN_LINE_WIDTH, "%s", viewctl.dataValue + offset);
+            snprintf(viewctl.dataValueChunk[i], MAX_SCREEN_LINE_WIDTH, "%s", viewctl.dataValue + offset);
         }
         offset += (MAX_SCREEN_LINE_WIDTH - 1);
     }
@@ -152,30 +152,30 @@ void viewctl_display_page() {
 
     // Read key and value strings
     viewctl_ehGetData(
-            (char *) viewctl.title, sizeof(viewctl.title),
-            (char *) viewctl.dataKey, sizeof(viewctl.dataKey),
-            (char *) viewctl.dataValue, sizeof(viewctl.dataValue),
+            viewctl.title, sizeof(viewctl.title),
+            viewctl.dataKey, sizeof(viewctl.dataKey),
+            viewctl.dataValue, sizeof(viewctl.dataValue),
             viewctl.detailsCurrentPage, viewctl.chunksIndex,
             &viewctl.detailsPageCount, &viewctl.chunksCount);
 
     // fix possible utf8 issues
-    asciify((char *) viewctl.title);
-    asciify((char *) viewctl.dataKey);
-    asciify((char *) viewctl.dataValue);
+    asciify(viewctl.title);
+    asciify(viewctl.dataKey);
+    asciify(viewctl.dataValue);
 
     if (viewctl.chunksCount > 0) {
         // If value is very long, we split it into chunks
         // and add chunk index/count information at the end of the key
         if (viewctl.chunksCount > 1) {
-            int position = strlen((char *) viewctl.dataKey);
-            snprintf((char *) viewctl.dataKey + position,
+            int position = strlen(viewctl.dataKey);
+            snprintf(viewctl.dataKey + position,
                      sizeof(viewctl.dataKey) - position,
                      " %d/%d",
                      viewctl.chunksIndex + 1,
                      viewctl.chunksCount);
         }
 
-#if defined(TARGET_NANOX)
+#if defined(TARGET_NANOX) || defined(TARGET_NANOS2)
         viewctl_dataValue_split();
 #elif defined(TARGET_NANOS)
         switch (viewctl.scrolling_mode) {
@@ -186,10 +186,10 @@ void viewctl_display_page() {
         }
         case PENDING: {
             viewctl.scrolling_mode = VALUE_SCROLLING;
-            if (strlen((char *) viewctl.dataKey) > MAX_SCREEN_LINE_WIDTH) {
-                int value_length = strlen((char *) viewctl.dataValue);
+            if (strlen(viewctl.dataKey) > MAX_SCREEN_LINE_WIDTH) {
+                int value_length = strlen(viewctl.dataValue);
                 if (value_length > MAX_SCREEN_LINE_WIDTH) {
-                    strcpy((char *) viewctl.dataValue, "DBL-CLICK FOR VALUE");
+                    strcpy(viewctl.dataValue, "DBL-CLICK FOR VALUE");
                     viewctl.scrolling_mode = KEY_SCROLLING_NO_VALUE;
                 } else {
                     viewctl.scrolling_mode = KEY_SCROLLING_SHORT_VALUE;

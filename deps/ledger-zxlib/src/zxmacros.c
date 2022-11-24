@@ -25,7 +25,7 @@ void __logstack()
     uint32_t tmp1 = (uint32_t)&st - (uint32_t)&app_stack_canary;
     uint32_t tmp2 = 0x20002800 - (uint32_t)&st;
     char buffer[30];
-    snprintf(buffer, 40, "%d / %d", tmp1, tmp2);
+    snprintf(buffer, sizeof(buffer), "%d / %d", tmp1, tmp2);
     LOG(buffer);
 }
 #else

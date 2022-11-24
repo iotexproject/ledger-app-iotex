@@ -20,10 +20,12 @@
 #include "view_templates.h"
 #include "view_expl.h"
 
-#include "glyphs.h"
+#include "ux.h"
+#include "os_io_seproxyhal.h"
 #include "bagl.h"
 #include "zxmacros.h"
 #include "crypto.h"
+#include "settings.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -50,12 +52,12 @@ viewctl_delegate_reject ehReject = NULL;
 #define UIID_MARKER1    0x60
 #define UIID_MARKER2    0x61
 
-void accept(unsigned int _) {
+void accept_operation(unsigned int _) {
     UNUSED(_);
     if (ehAccept != NULL) ehAccept();
 }
 
-void reject(unsigned int _) {
+void reject_operation(unsigned int _) {
     UNUSED(_);
     if (ehReject != NULL) ehReject();
 }
@@ -64,12 +66,21 @@ void show_idle_menu() {
     view_idle(0);
 }
 
+/* Tx */
 void view_tx_menu(unsigned int _);
+
+/* Sign message */
 void view_smsg_menu(unsigned int _);
+
+/* Settings */
+void view_app_settings(unsigned int _);
+void view_settings_show(unsigned int _);
+void view_contract_data_allow(unsigned int _);
+void view_contract_data_disallow(unsigned int _);
+
+/* Show Address */
 void view_addr_choose_show(unsigned int _);
-
 void view_addr_choose_refresh();
-
 void view_addr_choose_update();
 
 struct {
@@ -85,7 +96,7 @@ struct {
 } view_addr_choose_data;
 
 
-#if defined(TARGET_NANOX)
+#if defined(TARGET_NANOX) || defined(TARGET_NANOS2)
 
 #include "ux.h"
 ux_state_t G_ux;
@@ -97,19 +108,21 @@ UX_FLOW_DEF_NOCB(ux_idle_flow_1_step, pbb, { &C_icon_app, "IoTeX", "application 
 UX_FLOW_DEF_NOCB(ux_idle_flow_1_step, pbb, { &C_icon_app, "IoTeX", "application", });
 #endif
 UX_FLOW_DEF_VALID(ux_idle_flow_2_step, pb, view_addr_choose_show(0), { &C_icon_eye, "Show Address",});
-UX_FLOW_DEF_NOCB(ux_idle_flow_3_step, bn, { "Version", APPVERSION, });
-UX_FLOW_DEF_VALID(ux_idle_flow_4_step, pb, os_sched_exit(-1), { &C_icon_dashboard, "Quit",});
+UX_FLOW_DEF_VALID(ux_idle_flow_3_step, pb, view_app_settings(0), { &C_icon_eye, "App Settings",});
+UX_FLOW_DEF_NOCB(ux_idle_flow_4_step, bn, { "Version", APPVERSION, });
+UX_FLOW_DEF_VALID(ux_idle_flow_5_step, pb, os_sched_exit(-1), { &C_icon_dashboard, "Quit",});
 const ux_flow_step_t *const ux_idle_flow [] = {
   &ux_idle_flow_1_step,
   &ux_idle_flow_2_step,
   &ux_idle_flow_3_step,
   &ux_idle_flow_4_step,
+  &ux_idle_flow_5_step,
   FLOW_END_STEP,
 };
 
 UX_FLOW_DEF_VALID(ux_tx_flow_1_step, pbb, view_tx_show(0), { &C_icon_eye, "Review", "Transaction" });
-UX_FLOW_DEF_VALID(ux_tx_flow_2_step, pbb, accept(0), { &C_icon_validate_14, "Sign", "Transaction" });
-UX_FLOW_DEF_VALID(ux_tx_flow_3_step, pbb, reject(0), { &C_icon_crossmark, "Reject", "Transaction" });
+UX_FLOW_DEF_VALID(ux_tx_flow_2_step, pbb, accept_operation(0), { &C_icon_validate_14, "Sign", "Transaction" });
+UX_FLOW_DEF_VALID(ux_tx_flow_3_step, pbb, reject_operation(0), { &C_icon_crossmark, "Reject", "Transaction" });
 const ux_flow_step_t *const ux_tx_flow [] = {
   &ux_tx_flow_1_step,
   &ux_tx_flow_2_step,
@@ -119,8 +132,8 @@ const ux_flow_step_t *const ux_tx_flow [] = {
 
 UX_FLOW_DEF_NOCB(ux_addr_flow_1_step, bnn, { "Address Request", viewctl.title, viewctl.dataKey});
 UX_FLOW_DEF_NOCB(ux_addr_flow_2_step, bnnn_paging, { .title = "Address", .text = viewctl.dataValue });
-UX_FLOW_DEF_VALID(ux_addr_flow_3_step, pb, accept(0), { &C_icon_validate_14, "Reply", });
-UX_FLOW_DEF_VALID(ux_addr_flow_4_step, pb, reject(0), { &C_icon_crossmark, "Reject", });
+UX_FLOW_DEF_VALID(ux_addr_flow_3_step, pb, accept_operation(0), { &C_icon_validate_14, "Reply", });
+UX_FLOW_DEF_VALID(ux_addr_flow_4_step, pb, reject_operation(0), { &C_icon_crossmark, "Reject", });
 const ux_flow_step_t *const ux_addr_flow [] = {
   &ux_addr_flow_1_step,
   &ux_addr_flow_2_step,
@@ -130,12 +143,22 @@ const ux_flow_step_t *const ux_addr_flow [] = {
 };
 
 UX_FLOW_DEF_VALID(ux_smsg_flow_1_step, pbb, view_smsg_show(0), { &C_icon_eye, "Review", "Sign Message" });
-UX_FLOW_DEF_VALID(ux_smsg_flow_2_step, pbb, accept(0), { &C_icon_validate_14, "Sign", "Sign Message" });
-UX_FLOW_DEF_VALID(ux_smsg_flow_3_step, pbb, reject(0), { &C_icon_crossmark, "Reject", "Sign Message" });
+UX_FLOW_DEF_VALID(ux_smsg_flow_2_step, pbb, accept_operation(0), { &C_icon_validate_14, "Sign", "Sign Message" });
+UX_FLOW_DEF_VALID(ux_smsg_flow_3_step, pbb, reject_operation(0), { &C_icon_crossmark, "Reject", "Sign Message" });
 const ux_flow_step_t *const ux_smsg_flow [] = {
   &ux_smsg_flow_1_step,
   &ux_smsg_flow_2_step,
   &ux_smsg_flow_3_step,
+  FLOW_END_STEP,
+};
+
+UX_FLOW_DEF_VALID(ux_settings_flow_1_step, pbb, view_settings_show(0), { &C_icon_eye, "Contract data", viewctl.dataValue});
+UX_FLOW_DEF_VALID(ux_settings_flow_2_step, pbb, view_contract_data_allow(0), { &C_icon_validate_14, "Allow", "Contract data" });
+UX_FLOW_DEF_VALID(ux_settings_flow_3_step, pbb, view_contract_data_disallow(0), { &C_icon_crossmark, "Disallow", "Contract data" });
+const ux_flow_step_t *const ux_settings_flow [] = {
+  &ux_settings_flow_1_step,
+  &ux_settings_flow_2_step,
+  &ux_settings_flow_3_step,
   FLOW_END_STEP,
 };
 
@@ -144,10 +167,14 @@ const ux_flow_step_t *const ux_smsg_flow [] = {
 // Nano S
 ux_state_t ux;
 
+static void exit_app(unsigned int code) {
+    os_sched_exit(code);
+}
+
 const ux_menu_entry_t menu_transaction_info[] = {
         {NULL, view_tx_show, 0, NULL, "View transaction", NULL, 0, 0},
-        {NULL, accept, 0, &C_icon_validate_14, "Sign", NULL, 60, 40},
-        {NULL, reject, 0, &C_icon_crossmark, "Reject", NULL, 60, 40},
+        {NULL, accept_operation, 0, &C_icon_validate_14, "Sign", NULL, 60, 40},
+        {NULL, reject_operation, 0, &C_icon_crossmark, "Reject", NULL, 60, 40},
         UX_MENU_END
 };
 
@@ -158,8 +185,9 @@ const ux_menu_entry_t menu_main[] = {
         {NULL, NULL, 0, &C_icon_app, "IoTeX", "application", 33, 12},
 #endif
         {NULL, view_addr_choose_show, 0, NULL, "Show Address", NULL, 0, 0},
+        {NULL, view_app_settings, 0, NULL, "Settings", NULL, 0, 0},
         {NULL, NULL, 0, NULL, "v"APPVERSION, NULL, 0, 0},
-        {NULL, os_sched_exit, 0, &C_icon_dashboard, "Quit app", NULL, 50, 29},
+        {NULL, exit_app, 0, &C_icon_dashboard, "Quit app", NULL, 50, 29},
         UX_MENU_END
 };
 
@@ -168,10 +196,18 @@ const ux_menu_entry_t menu_status[] = {
         UX_MENU_END
 };
 
+const ux_menu_entry_t menu_settings[] = {
+        {NULL, view_settings_show, 0, NULL, "Contract data", viewctl.dataValue, 0, 0},
+        {NULL, view_contract_data_allow, 0, &C_icon_validate_14, "Allow", NULL, 60, 40},
+        {NULL, view_contract_data_disallow, 0, &C_icon_crossmark, "Disallow", NULL, 60, 40},
+        {NULL, show_idle_menu, 0, &C_icon_back, "Back", NULL, 60, 40},
+        UX_MENU_END
+};
+
 const ux_menu_entry_t menu_sign_msg[] = {
         {NULL, view_smsg_show, 0, NULL, "Sign Message", NULL, 0, 0},
-        {NULL, accept, 0, &C_icon_validate_14, "Sign", NULL, 60, 40},
-        {NULL, reject, 0, &C_icon_crossmark, "Reject", NULL, 60, 40},
+        {NULL, accept_operation, 0, &C_icon_validate_14, "Sign", NULL, 60, 40},
+        {NULL, reject_operation, 0, &C_icon_crossmark, "Reject", NULL, 60, 40},
         UX_MENU_END
 };
 
@@ -185,7 +221,7 @@ static const bagl_element_t view_addr_choose[] = {
         UI_LabelLine(UIID_LABEL + 1, 0, 9 + UI_11PX * 1, UI_SCREEN_WIDTH, UI_11PX, UI_WHITE, UI_BLACK,
                      (const char *) viewctl.dataKey),
 
-#if defined(TARGET_NANOX)
+#if defined(TARGET_NANOX) || defined(TARGET_NANOS2)
     UI_Icon(UIID_ICONLEFT1, 2, 28, 4, 7, BAGL_GLYPH_ICON_LEFT),
     UI_Icon(UIID_ICONRIGHT1, 122, 28, 4, 7, BAGL_GLYPH_ICON_RIGHT),
     UI_Icon(UIID_ICONLEFT2, 2, 28, 4, 7, BAGL_GLYPH_ICON_LEFT),
@@ -256,6 +292,8 @@ uint32_t bip32_field_add(uint32_t field, int16_t value) {
 }
 
 static unsigned int view_addr_choose_button(unsigned int button_mask, unsigned int button_mask_counter) {
+    UNUSED(button_mask_counter);
+
     switch (button_mask) {
         case BUTTON_EVT_RELEASED | BUTTON_LEFT | BUTTON_RIGHT:
             // Press both to accept / switch mode
@@ -282,12 +320,12 @@ static unsigned int view_addr_choose_button(unsigned int button_mask, unsigned i
                     break;
                 case VIEW_ADDR_MODE_SHOW:
                     // DO NOTHING
-#if defined(TARGET_NANOX)
+#if defined(TARGET_NANOX) || defined(TARGET_NANOS2)
                     show_idle_menu();
 #endif
                     return 0;
                 case VIEW_ADDR_MODE_CONFIRM:
-                    reject(0);
+                    reject_operation(0);
                     return 0;
                 default:
                     return 0;
@@ -307,7 +345,7 @@ static unsigned int view_addr_choose_button(unsigned int button_mask, unsigned i
                     show_idle_menu();
                     return 0;
                 case VIEW_ADDR_MODE_CONFIRM:
-                    accept(0);
+                    accept_operation(0);
                     return 0;
                 default:
                     return 0;
@@ -364,9 +402,11 @@ void view_init(void) {
 }
 
 void view_idle(unsigned int ignored) {
+    UNUSED(ignored);
+
 #if defined(TARGET_NANOS)
     UX_MENU_DISPLAY(0, menu_main, NULL);
-#elif defined(TARGET_NANOX)
+#elif defined(TARGET_NANOX) || defined(TARGET_NANOS2)
     if(G_ux.stack_count == 0) {
         ux_stack_push();
     }
@@ -375,6 +415,8 @@ void view_idle(unsigned int ignored) {
 }
 
 void view_status(unsigned int ignored) {
+    UNUSED(ignored);
+
 #if defined(TARGET_NANOS)
     UX_MENU_DISPLAY(0, menu_status, NULL);
 #endif
@@ -386,7 +428,6 @@ void view_tx_show(unsigned int start_page) {
                    ehGetData,
                    NULL,
                    view_tx_menu);
-
 }
 
 void view_smsg_show(unsigned int start_page) {
@@ -429,6 +470,8 @@ void view_addr_choose_refresh() {
 }
 
 void view_addr_choose_show(unsigned int _) {
+    UNUSED(_);
+
     // Initialize show view
     view_addr_choose_data.status.mode = VIEW_ADDR_MODE_SHOW;
     view_addr_choose_data.account = 0;
@@ -442,7 +485,50 @@ void view_addr_choose_show(unsigned int _) {
     view_addr_choose_refresh();
 }
 
+
+void view_settings_show(unsigned int _) {
+    UNUSED(_);
+#if defined(TARGET_NANOS)
+    UX_MENU_DISPLAY(2, menu_main, NULL);
+#elif defined(TARGET_NANOX) || defined(TARGET_NANOS2)
+    if(G_ux.stack_count == 0) {
+        ux_stack_push();
+    }
+    ux_flow_init(0, ux_idle_flow, NULL);
+#endif
+}
+
+void view_contract_data_allow(unsigned int _) {
+    UNUSED(_);
+
+    uint8_t value = 1;
+    nvm_write((void*) &N_settings.contractDataAllowed, (void*) &value, sizeof(uint8_t));
+    view_app_settings(0);
+}
+
+void view_contract_data_disallow(unsigned int _) {
+    UNUSED(_);
+    uint8_t value = 0;
+    nvm_write((void*) &N_settings.contractDataAllowed, (void*) &value, sizeof(uint8_t));
+    view_app_settings(0);
+}
+
+void view_app_settings(unsigned int _) {
+    UNUSED(_);
+    snprintf(viewctl.dataValue, sizeof(viewctl.dataValue), "%s", (N_settings.contractDataAllowed ? "Allowed": "NOT Allowed"));
+#if defined(TARGET_NANOS)
+    UX_MENU_DISPLAY(0, menu_settings, NULL);
+#elif defined(TARGET_NANOX) || defined(TARGET_NANOS2)
+    if(G_ux.stack_count == 0) {
+        ux_stack_push();
+    }
+    ux_flow_init(0, ux_settings_flow, NULL);
+#endif
+}
+
 void view_addr_confirm(unsigned int _) {
+    UNUSED(_);
+
     view_addr_choose_data.status.mode = VIEW_ADDR_MODE_CONFIRM;
     view_addr_choose_data.account = BIP32_ACCOUNT;
     view_addr_choose_data.index = BIP32_INDEX;
@@ -450,7 +536,7 @@ void view_addr_confirm(unsigned int _) {
 
 #if defined(TARGET_NANOS)
     view_addr_choose_refresh();
-#elif defined(TARGET_NANOX)
+#elif defined(TARGET_NANOX) || defined(TARGET_NANOS2)
     if(G_ux.stack_count == 0) {
         ux_stack_push();
     }
@@ -463,7 +549,7 @@ void view_tx_menu(unsigned int unused) {
 
 #if defined(TARGET_NANOS)
     UX_MENU_DISPLAY(0, menu_transaction_info, NULL);
-#elif defined(TARGET_NANOX)
+#elif defined(TARGET_NANOX) || defined(TARGET_NANOS2)
     if(G_ux.stack_count == 0) {
         ux_stack_push();
     }
@@ -476,7 +562,7 @@ void view_smsg_menu(unsigned int unused) {
 
 #if defined(TARGET_NANOS)
     UX_MENU_DISPLAY(0, menu_sign_msg, NULL);
-#elif defined(TARGET_NANOX)
+#elif defined(TARGET_NANOX) || defined(TARGET_NANOS2)
     if(G_ux.stack_count == 0) {
         ux_stack_push();
     }

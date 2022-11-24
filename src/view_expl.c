@@ -20,14 +20,14 @@
 #include "view_templates.h"
 #include "view_expl.h"
 
-#include "glyphs.h"
+#include "ux.h"
 #include "bagl.h"
 #include "zxmacros.h"
 
 #include <string.h>
 #include <stdio.h>
 
-#if defined(TARGET_NANOX)
+#if defined(TARGET_NANOX) || defined(TARGET_NANOS2)
 static const bagl_element_t viewexpl_bagl[] = {
     UI_BACKGROUND_LEFT_RIGHT_ICONS,
     UI_LabelLine(UIID_LABEL+0, 0, 9 + UI_11PX * 0, UI_SCREEN_WIDTH, UI_11PX, UI_WHITE, UI_BLACK, (const char *) viewctl.title),
@@ -97,16 +97,11 @@ static const bagl_element_t viewexpl_bagl_valuescrolling[] = {
     UI_LabelLineScrolling(UIID_LABELSCROLL, 16, 30, 96, UI_11PX, UI_WHITE, UI_BLACK, (const char *) viewctl.dataValue),
 };
 
-static const bagl_element_t viewexpl_bagl_keyscrolling[] = {
-    UI_BACKGROUND_LEFT_RIGHT_ICONS,
-    UI_LabelLine(UIID_LABEL + 0, 0, 8, UI_SCREEN_WIDTH, UI_11PX, UI_WHITE, UI_BLACK, (const char *) viewctl.title),
-    UI_LabelLine(UIID_LABEL + 1, 0, 30, UI_SCREEN_WIDTH, UI_11PX, UI_WHITE, UI_BLACK, (const char *) viewctl.dataValue),
-    UI_LabelLineScrolling(UIID_LABELSCROLL, 16, 19, 96, UI_11PX, UI_WHITE, UI_BLACK, (const char *) viewctl.dataKey),
-};
-
 static unsigned int viewexpl_bagl_keyscrolling_button(
         unsigned int button_mask,
         unsigned int button_mask_counter) {
+    UNUSED(button_mask_counter);
+
     switch (button_mask) {
         // Press both left and right to switch to value scrolling
         case BUTTON_EVT_RELEASED | BUTTON_LEFT | BUTTON_RIGHT: {
@@ -179,14 +174,9 @@ const bagl_element_t *viewexpl_bagl_prepro(const bagl_element_t *element) {
 }
 
 void viewexpl_display_ux() {
-#if defined(TARGET_NANOX)
+#if defined(TARGET_NANOX) || defined(TARGET_NANOS2)
     UX_DISPLAY(viewexpl_bagl, viewexpl_bagl_prepro);
 #else
-    /* if (viewctl.scrolling_mode == VALUE_SCROLLING) {
-        UX_DISPLAY(viewexpl_bagl_valuescrolling, viewexpl_bagl_prepro);
-    } else {
-        UX_DISPLAY(viewexpl_bagl_keyscrolling, viewexpl_bagl_prepro);
-    }*/
     UX_DISPLAY(viewexpl_bagl_valuescrolling, viewexpl_bagl_prepro);
 #endif
 }
