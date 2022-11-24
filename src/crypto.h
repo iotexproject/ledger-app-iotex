@@ -63,3 +63,5 @@ void getPubKey(cx_ecfp_public_key_t *publicKey);
 void get_pk_compressed(uint8_t *pkc);
 
 void get_bech32_addr(char *bech32_addr);
+void encode_bech32_addr(char *bech32_addr, const uint8_t *input);
+void encode_bech32_addr20(char *bech32_addr, const uint8_t *input);

@@ -24,17 +24,14 @@ include $(BOLOS_SDK)/Makefile.defines
 # Main app configuration
 APPNAME = "IoTeX"
 APPVERSION_M=0
-APPVERSION_N=1
+APPVERSION_N=2
 APPVERSION_P=5
 
-APP_LOAD_PARAMS = --appFlags 0x200 --delete $(COMMON_LOAD_PARAMS) --path "44'/304'"
+APP_LOAD_PARAMS += --appFlags 0x200 --delete $(COMMON_LOAD_PARAMS) --path "44'/304'"
 
 ifeq ($(TARGET_NAME),TARGET_NANOS)
-SCRIPT_LD:=$(CURDIR)/script.ld
 ICONNAME:=$(CURDIR)/nanos_icon.gif
-endif
-
-ifeq ($(TARGET_NAME),TARGET_NANOX)
+else
 ICONNAME:=$(CURDIR)/nanox_icon.gif
 endif
 
@@ -44,14 +41,15 @@ endif
 
 all: default
 
+# Pending review parameters
+APP_LOAD_PARAMS += --tlvraw 9F:01
+DEFINES += HAVE_PENDING_REVIEW_SCREEN
+
 ############
 # Platform
 
 DEFINES   += UNUSED\(x\)=\(void\)x
 DEFINES   += PRINTF\(...\)=
-
-# Debug decode_pb
-#DEFINES   += _DEBUG_PB_DECODE_
 
 APPVERSION=$(APPVERSION_M).$(APPVERSION_N).$(APPVERSION_P)
 DEFINES   += APPVERSION=\"$(APPVERSION)\"
@@ -62,18 +60,18 @@ DEFINES += HAVE_IO_USB HAVE_L4_USBLIB IO_USB_MAX_ENDPOINTS=7 IO_HID_EP_LENGTH=64
 
 DEFINES += LEDGER_MAJOR_VERSION=$(APPVERSION_M) LEDGER_MINOR_VERSION=$(APPVERSION_N) LEDGER_PATCH_VERSION=$(APPVERSION_P)
 
-DEFINES   += HAVE_U2F HAVE_IO_U2F
-DEFINES   += U2F_PROXY_MAGIC=\"CSM\"
 DEFINES   += USB_SEGMENT_SIZE=64
-DEFINES   += U2F_MAX_MESSAGE_SIZE=264 #257+5+2
 DEFINES   += HAVE_BOLOS_APP_STACK_CANARY
 
 WEBUSB_URL     = www.ledgerwallet.com
 DEFINES       += HAVE_WEBUSB WEBUSB_URL_SIZE_B=$(shell echo -n $(WEBUSB_URL) | wc -c) WEBUSB_URL=$(shell echo -n $(WEBUSB_URL) | sed -e "s/./\\\'\0\\\',/g")
 
-ifeq ($(TARGET_NAME),TARGET_NANOX)
-DEFINES += IO_SEPROXYHAL_BUFFER_SIZE_B=300
-
+ifeq ($(TARGET_NAME),TARGET_NANOS)
+# Nano S
+DEFINES       += IO_SEPROXYHAL_BUFFER_SIZE_B=128
+DEFINES       += COMPLIANCE_UX_160 HAVE_UX_LEGACY HAVE_UX_FLOW
+else
+DEFINES       += IO_SEPROXYHAL_BUFFER_SIZE_B=300
 DEFINES       += HAVE_GLO096
 DEFINES       += HAVE_BAGL BAGL_WIDTH=128 BAGL_HEIGHT=64
 DEFINES       += HAVE_BAGL_ELLIPSIS # long label truncation feature
@@ -82,13 +80,7 @@ DEFINES       += HAVE_BAGL_FONT_OPEN_SANS_EXTRABOLD_11PX
 DEFINES       += HAVE_BAGL_FONT_OPEN_SANS_LIGHT_16PX
 
 DEFINES          += HAVE_UX_FLOW
-
-#SDK_SOURCE_PATH  += lib_blewbxx lib_blewbxx_impl
 SDK_SOURCE_PATH  += lib_ux
-else
-# Assume Nano S
-DEFINES += IO_SEPROXYHAL_BUFFER_SIZE_B=128
-DEFINES += HAVE_BOLOS_UX COMPLIANCE_UX_160 HAVE_UX_LEGACY HAVE_UX_FLOW
 endif
 
 # X specific
@@ -118,7 +110,7 @@ endif
 #########################
 
 CC := $(CLANGPATH)clang
-CFLAGS += -O3 -Os
+CFLAGS += -O3 -Os -I. -Iproto -Wno-format
 
 AS := $(GCCPATH)arm-none-eabi-gcc
 AFLAGS +=
@@ -131,10 +123,26 @@ LDLIBS   += -lm -lgcc -lc
 include $(BOLOS_SDK)/Makefile.glyphs
 
 APP_SOURCE_PATH += src deps/ledger-zxlib/include deps/ledger-zxlib/src
-SDK_SOURCE_PATH += lib_stusb lib_u2f lib_stusb_impl
-
-#SDK_SOURCE_PATH  += lib_blewbxx lib_blewbxx_impl
+SDK_SOURCE_PATH += lib_stusb lib_stusb_impl
 SDK_SOURCE_PATH  += lib_ux
+
+# nanopb
+include nanopb/extra/nanopb.mk
+
+DEFINES   += PB_NO_ERRMSG=1
+SOURCE_FILES += $(NANOPB_CORE)
+CFLAGS += "-I$(NANOPB_DIR)"
+
+# Build rule for proto files
+SOURCE_FILES += proto/action.pb.c
+
+proto/action.pb.c: proto/action.proto
+	$(PROTOC) $(PROTOC_OPTS) --nanopb_out=. proto/action.proto
+
+# target to also clean generated proto c files
+.SILENT : cleanall
+cleanall : clean
+	-@rm -rf proto/*.pb.c proto/*.pb.h
 
 load:
 	python -m ledgerblue.loadApp $(APP_LOAD_PARAMS)

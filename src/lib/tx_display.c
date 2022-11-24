@@ -21,7 +21,7 @@
 #include "tx_display.h"
 #include "transaction.h"
 
-#if defined(TARGET_NANOS) || defined(TARGET_NANOX)
+#if defined(TARGET_NANOS) || defined(TARGET_NANOX) || defined(TARGET_NANOS2)
 #include "os.h"
 #else
 #define PIC(X) X
@@ -83,11 +83,14 @@ display_cache_t *tx_display_cache() {
     }
 
     // Clear values
+    tx_ctx.contract_data_idx = -1;
+    tx_ctx.has_contract_data = false;
+
     display_cache.num_pages = 0;
     memset(display_cache.num_subpages, 0, NUM_REQUIRED_ROOT_PAGES);
     memset(display_cache.subroot_start_token, TX_TOKEN_NOT_FOUND, NUM_REQUIRED_ROOT_PAGES);
 
-    decode_pb(transaction_get_buffer(),transaction_get_buffer_length(),&totalpages,-1);
+    decode_pb(transaction_get_buffer(),transaction_get_buffer_length(), &totalpages, -1);
 
     display_cache.num_pages = totalpages;
     parsing_context.cache_valid = 1;
@@ -107,7 +110,7 @@ int16_t tx_display_get_item(uint16_t page_index) {
     // TODO: Verify it has been properly set?
     tx_ctx.query.out_key[0] = 0;
     tx_ctx.query.out_val[0] = 0;
-    if (page_index < 0 || page_index >= display_cache.num_pages) {
+    if (page_index >= display_cache.num_pages) {
         return -1;
     }
 

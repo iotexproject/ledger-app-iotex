@@ -49,12 +49,6 @@
         0               /* icon_id  */                      \
     },                                                      \
         NULL,   /* text             */                      \
-        0,      /* touch_area_brim  */                      \
-        0,      /* overfgcolor      */                      \
-        0,      /* overbgcolor      */                      \
-        NULL,   /* tap              */                      \
-        NULL,   /* out              */                      \
-        NULL,   /* over             */                      \
 }
 
 #define UI_LabelLine(id, x, y, w, h, fgcolor, bgcolor, text)    \
@@ -75,12 +69,6 @@
         0               /* icon_id  */                          \
     },                                                          \
         text,   /* text             */                          \
-        0,      /* touch_area_brim  */                          \
-        0,      /* overfgcolor      */                          \
-        0,      /* overbgcolor      */                          \
-        NULL,   /* tap              */                          \
-        NULL,   /* out              */                          \
-        NULL,   /* over             */                          \
 }
 
 #define UI_LabelLineScrolling(id, x, y, w, h, fgcolor, bgcolor, text)    \
@@ -101,15 +89,9 @@
         50 /* icon_id / scroll speed  */ \
     },                                                          \
         text,   /* text             */                          \
-        0,      /* touch_area_brim  */                          \
-        0,      /* overfgcolor      */                          \
-        0,      /* overbgcolor      */                          \
-        NULL,   /* tap              */                          \
-        NULL,   /* out              */                          \
-        NULL,   /* over             */                          \
 }
 
-#if defined(TARGET_NANOX)
+#if defined(TARGET_NANOX) || defined(TARGET_NANOS2)
 #define UI_SCREEN_WIDTH  128
 #define UI_SCREEN_HEIGHT 64
 
@@ -136,12 +118,6 @@
         0               /* icon_id  */                      \
     },                                                      \
         icon,   /* text             */                      \
-        0,      /* touch_area_brim  */                      \
-        0,      /* overfgcolor      */                      \
-        0,      /* overbgcolor      */                      \
-        NULL,   /* tap              */                      \
-        NULL,   /* out              */                      \
-        NULL,   /* over             */                      \
 }
 
 #define UI_BACKGROUND_LEFT_RIGHT_ICONS \
@@ -171,12 +147,6 @@
         icon            /* icon_id  */                      \
     },                                                      \
         NULL,   /* text             */                      \
-        0,      /* touch_area_brim  */                      \
-        0,      /* overfgcolor      */                      \
-        0,      /* overbgcolor      */                      \
-        NULL,   /* tap              */                      \
-        NULL,   /* out              */                      \
-        NULL,   /* over             */                      \
 }
 
 #define UI_BACKGROUND_LEFT_RIGHT_ICONS \
